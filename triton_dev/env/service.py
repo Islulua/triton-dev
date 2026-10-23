@@ -4,8 +4,8 @@ import hashlib
 import json
 import os
 import shlex
+import shutil
 import sys
-import venv
 from pathlib import Path
 
 from triton_dev.common.contracts import ToolError, atomic_json, file_lock, run_process
@@ -13,22 +13,35 @@ from .sdk import normalize, select, wheels
 from .settings import MANAGED
 
 
+def python_identity(python):
+    result = run_process([str(python), "-I", "-c",
+                          "import sys,sysconfig; print(sys.version); print(sysconfig.get_platform())"])
+    if result["returncode"]:
+        raise ToolError("PYTHON_UNAVAILABLE", "Interpreter identity probe failed", details=result)
+    return result["stdout"]
+
+
 def plan(root, selector="latest", *, overrides=None, python=sys.executable):
     overrides = overrides or {}
     unknown = set(overrides) - {"triton", "torch_raisa", "raops"}
     if unknown:
         raise ToolError("UNSUPPORTED", "Native component mapping is not confirmed", details={"components": sorted(unknown)})
+    from .preflight import target, check
+    executable = shutil.which(str(python))
+    if executable is None:
+        raise ToolError("PYTHON_UNAVAILABLE", f"Interpreter not found or executable: {python}")
+    context = target(executable)
     sdk = select(root, selector)
-    selected = {normalize(item["name"]).replace("-", "_"): item for item in wheels(sdk)}
+    selected = {normalize(item["name"]).replace("-", "_"): item for item in wheels(sdk, context=context)}
     for component, version in overrides.items():
         source = select(root, version)
-        candidates = {normalize(item["name"]).replace("-", "_"): item for item in wheels(source)}
+        candidates = {normalize(item["name"]).replace("-", "_"): item for item in wheels(source, context=context)}
         selected[component] = candidates[component]
-    identity = run_process([str(python), "-c", "import sys,sysconfig; print(sys.version); print(sysconfig.get_platform())"])
-    if identity["returncode"]:
-        raise ToolError("PYTHON_UNAVAILABLE", identity["stderr"])
-    data = {"sdk": str(sdk), "python": str(Path(python).resolve()),
-            "python_identity": identity["stdout"], "wheels": list(selected.values())}
+    # Preserve venv symlinks: resolving them can change interpreter context.
+    executable = os.path.abspath(executable)
+    data = {"sdk": str(sdk), "python": executable,
+            "python_identity": python_identity(executable), "wheels": list(selected.values()),
+            "preparation_version": 3, "preflight": check(list(selected.values()), context)}
     data["key"] = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()[:24]
     data["native_loading"] = "not_checked"
     return data
@@ -61,8 +74,14 @@ def prepare(root, cache, selector="latest", *, overrides=None, python=sys.execut
         if creator:
             creator(venv_path)
         else:
-            venv.EnvBuilder(with_pip=True, system_site_packages=False).create(venv_path)
+            result = run_process([spec["python"], "-I", "-m", "venv", str(venv_path)],
+                                 timeout=300)
+            if result["returncode"]:
+                raise ToolError("VENV_CREATION_FAILED", "Selected Python could not create venv",
+                                details=result)
         wheel_python = venv_path / "bin/python"
+        if python_identity(wheel_python) != spec["python_identity"]:
+            raise ToolError("PYTHON_IDENTITY_MISMATCH", "Created venv differs from selected Python")
         (installer or install)(wheel_python, [w["path"] for w in spec["wheels"]],
                                [str(Path(w["path"]).parent) for w in spec["wheels"]])
         # Re-resolve after installation to avoid publishing a changed source combination.

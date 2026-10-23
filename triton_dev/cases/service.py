@@ -24,3 +24,28 @@ def collect(path, *, python=sys.executable, marker=None, timeout=60):
         if not output.exists():
             raise ToolError("COLLECTION_FAILED", "Collection adapter produced no result", details=result)
         return {"cases": json.loads(output.read_text()), "returncode": result["returncode"]}
+
+
+def show(path, nodeid, **options):
+    items = [item for item in collect(path, **options)['cases'] if item['nodeid'] == nodeid]
+    if len(items) != 1:
+        raise ToolError('CASE_NOT_FOUND', nodeid)
+    return items[0]
+
+
+def lint(path, *, require_id=False, **options):
+    cases = collect(path, **options)['cases']
+    ids, findings = {}, []
+    for item in cases:
+        case_id = item.get('case_id')
+        logical = item['nodeid'].split('[')[0]
+        if require_id and not case_id:
+            findings.append({'nodeid': item['nodeid'], 'code': 'MISSING_CASE_ID'})
+        if case_id and not isinstance(case_id, str):
+            findings.append({"nodeid": item["nodeid"], "code": "INVALID_CASE_ID"})
+            continue
+        if case_id:
+            previous = ids.setdefault(case_id, logical)
+            if previous != logical:
+                findings.append({'nodeid': item['nodeid'], 'code': 'DUPLICATE_CASE_ID', 'other': previous})
+    return {'cases': len(cases), 'findings': findings, 'valid': not findings}

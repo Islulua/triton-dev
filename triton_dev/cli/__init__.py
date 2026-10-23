@@ -39,8 +39,9 @@ def leaf(sub, name, command_id, summary, *, effects="read_only", status="impleme
 def selection(parser, *, positional=True):
     if positional:
         parser.add_argument("version", nargs="?", help="SDK full name or YYYYMMDD; latest means local latest")
+    parser.add_argument("--saved", help="Restore a verified immutable saved combination")
     parser.add_argument("--sdk", help="Explicit SDK full name, YYYYMMDD or local latest")
-    parser.add_argument("--python", default=sys.executable, help="Interpreter used by this environment combination")
+    parser.add_argument("--python", default=sys.executable, help="Executable path or PATH name used to create and identity-check the isolated venv")
     parser.add_argument("--triton-sdk", help="SDK source of the Triton wheel")
     parser.add_argument("--torch-sdk", help="SDK source of the torch_raisa wheel")
     parser.add_argument("--raops-sdk", help="SDK source of the raops wheel")
@@ -137,8 +138,13 @@ def parser_factory():
     p = leaf(sub, "report", "report", "Summarize a previously exported comparison without rerunning it")
     p.add_argument("input", type=Path)
     leaf(sub, "doctor", "doctor", "Read-only platform, SDK, cache and shell preflight")
-    p = leaf(sub, "serve", "serve", "Loopback read-only capabilities HTTP prototype; task UI is TODO", effects="listen_loopback")
+    p = leaf(sub, "serve", "serve", "Loopback capabilities and optional registered-job task API", effects="listen_loopback")
     p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--ui", type=Path, help="Built frontend dist/client directory, served on the same local origin")
+    p.add_argument("--jobs", type=Path, help="Trusted local JSON job registry; enables task API")
+    p.add_argument("--token-env", default="TRITON_DEV_SERVER_TOKEN", help="Token variable required when --jobs is set")
+    from .offline import register
+    register(sub, esub, cs, ds, ag, leaf, selection)
     return root
 
 
@@ -152,13 +158,38 @@ def describe(command):
             continue
         arguments.append({"name": action.dest, "flags": action.option_strings,
                           "required": action.required, "nargs": action.nargs,
+                          "repeatable": isinstance(action, argparse._AppendAction),
                           "choices": list(action.choices) if action.choices else None,
                           "default": str(action.default) if isinstance(action.default, Path) else action.default,
                           "type": "integer" if action.type is int else "number" if action.type is float else
                                   "boolean" if isinstance(action, argparse._StoreTrueAction) else "string",
                           "help": action.help})
+    properties, required = {}, []
+    for argument in arguments:
+        schema = {"type": argument["type"], "description": argument["help"] or ""}
+        if argument["choices"]:
+            schema["enum"] = argument["choices"]
+        if (argument["repeatable"] or argument["nargs"] in ("+", "*", argparse.REMAINDER)
+                or isinstance(argument["nargs"], int) and argument["nargs"] > 0):
+            schema = {"type": "array", "items": schema}
+            if argument["nargs"] == "+":
+                schema["minItems"] = 1
+        properties[argument["name"]] = schema
+        if argument["required"]:
+            required.append(argument["name"])
+    input_schema = {"$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "type": "object", "properties": properties,
+                    "required": required, "additionalProperties": False}
+    output_schema = {"$schema": "https://json-schema.org/draft/2020-12/schema",
+                     "type": "object", "required": ["schema_version", "status", "data", "error", "evidence"],
+                     "additionalProperties": False, "properties": {
+                         "schema_version": {"const": 1},
+                         "status": {"enum": ["ok", "failed", "unsupported"]},
+                         "data": {}, "error": {"type": ["object", "null"]},
+                         "evidence": {"type": "array"}}}
     return {"command_id": command, "summary": item["summary"], "status": item["status"],
             "side_effects": item["effects"], "arguments": arguments,
+            "input_schema": input_schema, "output_schema": output_schema,
             "result_schema": {"schema_version": 1, "fields": ["status", "data", "error", "evidence"]},
             "interaction": {"explicit_and_candidates_share_service": True,
                             "non_interactive_never_prompts": True}}
@@ -253,6 +284,11 @@ def dispatch(args):
     command = args.command_id
     if args.interactive and args.non_interactive:
         raise ToolError("INVALID_ARGUMENT", "--interactive and --non-interactive are mutually exclusive")
+    from .offline import apply_saved, dispatch as offline_dispatch
+    apply_saved(args)
+    handled, result = offline_dispatch(args, selected, overrides)
+    if handled:
+        return result
     if command == "capabilities":
         return capabilities()
     if command == "describe":
@@ -377,7 +413,14 @@ def dispatch(args):
         return check(args.sdk_root, args.cache_root)
     if command == "serve":
         from triton_dev.serve.service import serve
-        return serve(capabilities(), args.port)
+        if args.jobs:
+            from triton_dev.serve.tasks import TaskManager
+            token = os.environ.get(args.token_env)
+            if not token or len(token) < 16:
+                raise ToolError("INVALID_ARGUMENT", "Set the task API token variable (at least 16 characters)")
+            manager = TaskManager(args.cache_root / "tasks", json.loads(args.jobs.read_text()))
+            return serve(capabilities(), args.port, manager=manager, token=token, ui_root=args.ui)
+        return serve(capabilities(), args.port, ui_root=args.ui)
     raise ToolError("COMMAND_NOT_FOUND", command)
 
 

@@ -9,7 +9,7 @@ ruff check .
 python -m build
 ```
 
-每个模块维护 tests/、TODO.md；公开接口、帮助说明、候选行为和实际执行结果一起修改。新增流程同时补跨模块测试。TODO 使用具体验收条件，不用无依据的完成百分比。
+每个模块维护 tests/、TODO.md；公开接口、帮助说明、候选行为和实际执行结果一起修改。新增流程同时补跨模块测试。离线 mock 演示见 examples/offline_demo.py；安装包验证使用 examples/wheel_smoke.py，指定已安装 pytest 的 --test-python。TODO 使用具体验收条件，不用无依据的完成百分比。
 
 ## CI
 

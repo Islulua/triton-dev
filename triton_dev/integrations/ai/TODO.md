@@ -9,6 +9,10 @@ provider 协议已定义，离线模型已验证。这是实现/验证范围描�
 - [x] respond(context) -> dict 接口
 - [x] 不让 provider 拥有执行权限
 
+## 本轮离线增量
+
+- [x] ScriptedModel 支持登记实验工作流离线验证；不调用真实 provider
+
 ## 待办与验收条件
 
 - [ ] 授权模型接入、结构化响应校验

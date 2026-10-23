@@ -1,5 +1,6 @@
 import json
 import os
+import shlex
 import subprocess
 import sys
 
@@ -26,6 +27,50 @@ def test_real_offline_install_of_synthetic_wheels(make_sdk, tmp_path):
     assert all("error" not in value for value in observed["modules"].values())
     assert all(ready["venv"] in value["path"] for value in observed["modules"].values())
     assert observed["native_loading"] == "not_checked"
+
+
+def test_selected_python_creates_venv_with_quoted_path(make_sdk, tmp_path):
+    sdk = make_sdk()
+    wrapper = tmp_path / "python with spaces ' selected"
+    calls = tmp_path / "interpreter-calls.jsonl"
+    wrapper.write_text(
+        "#!/bin/sh\n" + shlex.quote(sys.executable) + " -c "
+        + shlex.quote("import json,sys; from pathlib import Path; "
+                      "p=Path(sys.argv[1]); "
+                      "p.open('a').write(json.dumps(sys.argv[2:])+'\\n')")
+        + " " + shlex.quote(str(calls)) + ' "$@"\nexec '
+        + shlex.quote(sys.executable) + ' "$@"\n'
+    )
+    wrapper.chmod(0o700)
+    ready = prepare(sdk.parent, tmp_path / "cache with spaces", python=str(wrapper))
+    invocations = [json.loads(line) for line in calls.read_text().splitlines()]
+    assert ["-I", "-m", "venv", ready["venv"]] in invocations
+    assert ready["python"] == str(wrapper)
+    assert all("error" not in module for module in probe(ready)["modules"].values())
+
+
+def test_python_name_resolves_from_path_without_dereferencing(make_sdk, tmp_path, monkeypatch):
+    sdk = make_sdk()
+    executable = tmp_path / "chosen-python"
+    executable.symlink_to(sys.executable)
+    monkeypatch.setenv("PATH", str(tmp_path))
+    assert plan(sdk.parent, python="chosen-python")["python"] == str(executable)
+
+
+def test_selected_python_venv_failure_never_installs(make_sdk, tmp_path):
+    sdk = make_sdk()
+    wrapper = tmp_path / "broken-python"
+    wrapper.write_text("#!/bin/sh\n"
+                       'if [ "$2" = "-m" ]; then exit 19; fi\n'
+                       "exec " + shlex.quote(sys.executable) + ' "$@"\n')
+    wrapper.chmod(0o700)
+    def unexpected_install(*args):
+        pytest.fail("Must not install after venv creation fails")
+    cache = tmp_path / "cache"
+    with pytest.raises(ToolError) as error:
+        prepare(sdk.parent, cache, python=str(wrapper), installer=unexpected_install)
+    assert error.value.code == "VENV_CREATION_FAILED"
+    assert not list(cache.rglob("ready.json"))
 
 
 def test_failed_install_never_ready(make_sdk, tmp_path):

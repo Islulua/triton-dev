@@ -9,6 +9,14 @@
 - [x] 同一 argparse 定义生成 help/describe/capabilities
 - [x] 实际候选查询、编号交互和非交互错误
 - [x] 兼容 triton-env 入口
+- [x] --python 帮助明确指定解释器创建与身份校验语义
+
+## 本轮离线增量
+
+- [x] 新增离线命令独立 dispatch；help/describe/capabilities 同源
+- [x] 解析后参数对象 input_schema 与 envelope output_schema；命令结果体仍为开放结构
+
+- [x] serve --ui 声明静态前端入口，不隐式构建或安装前端
 
 ## 待办与验收条件
 

@@ -2,3 +2,6 @@ include README.md STATUS.md AGENTS.md CONTRIBUTING.md conftest.py
 recursive-include docs *.md
 recursive-include tests *.py
 recursive-include triton_dev *.py TODO.md
+
+recursive-include examples *.py
+recursive-include skills *.md

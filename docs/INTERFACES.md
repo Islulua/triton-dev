@@ -9,9 +9,13 @@ triton-dev candidates env.sdk --json --non-interactive
 triton-dev candidates env.component --json --non-interactive
 ```
 
-describe 的参数、默认值与帮助来自真实 argparse parser。当前只输出轻量参数描述和结果字段，不宣称完整 JSON Schema。capabilities 同时标注 implemented/unsupported，agent.regression 等占位不能当成可执行功能。
+describe 的参数、默认值与帮助来自真实 argparse parser。现增加 input_schema（解析后参数对象）与 output_schema（版本化 envelope）；command-specific data 仍允许开放结构，不宣称每个结果体都有完整 Schema。env export 的 sh 模式仍为文本例外。capabilities 同时标注 implemented/unsupported，agent.regression 等占位不能当成可执行功能。
+
+新增接口、示例和边界见 [OFFLINE.md](OFFLINE.md)。
 
 ## 参数与交互
+
+`--python` 解析可执行路径或 PATH 名称，保留 venv 软链接路径；prepare 通过选定解释器的 `-I -m venv` 创建环境，安装前核对版本和平台。准备协议 v3 使用新缓存标识，不复用旧版准备结果。失败状态包括 PYTHON_UNAVAILABLE、VENV_CREATION_FAILED、PYTHON_IDENTITY_MISMATCH。这里的身份校验不证明 ABI 或设备功能兼容。
 
 SDK 完整名称、YYYYMMDD、本地 latest 支持同一服务解析。download 日期支持 YYYYMMDD/分钟精确格式，远端 latest 与本地 latest 分开。显式参数不被交互覆盖；-i 与 --non-interactive 互斥。缺必需候选时返回 NEEDS_INPUT，非终端不弹菜单。当前交互仅编号选择，搜索式候选是 TODO。
 

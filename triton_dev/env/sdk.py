@@ -58,9 +58,13 @@ def normalize(name):
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def wheels(sdk: Path):
+def wheels(sdk: Path, *, context=None):
     found = {normalize(name): [] for name in PACKAGES}
     for path in sorted((sdk / "wheel").glob("*.whl")):
+        if context is not None:
+            from .preflight import compatible
+            if not compatible(path, context):
+                continue
         try:
             with ZipFile(path) as archive:
                 names = [x for x in archive.namelist() if x.endswith(".dist-info/METADATA")]
@@ -73,7 +77,8 @@ def wheels(sdk: Path):
                 if normalize(name) in found:
                     found[normalize(name)].append({
                         "name": name, "version": version, "path": str(path.resolve()),
-                        "sha256": digest(path),
+                        "sha256": digest(path), "requires_python": metadata.get("Requires-Python"),
+                        "requires_dist": metadata.get_all("Requires-Dist", []),
                     })
         except (BadZipFile, ValueError, KeyError) as exc:
             raise ToolError("INVALID_WHEEL", f"{path.name}: {exc}") from exc

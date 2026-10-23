@@ -32,11 +32,15 @@ jobs:
         shell: bash
         run: |
           python -m venv "$RUNNER_TEMP/wheel-smoke"
-          "$RUNNER_TEMP/wheel-smoke/bin/python" -m pip install --no-deps dist/*.whl
+          python -m pip download 'packaging>=24' --dest "$RUNNER_TEMP/offline-wheels"
+          "$RUNNER_TEMP/wheel-smoke/bin/python" -m pip install --no-index --find-links "$RUNNER_TEMP/offline-wheels" dist/*.whl
+          test_python="$(command -v python)"
+          smoke_script="$PWD/examples/wheel_smoke.py"
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/wheel-smoke/bin/triton-dev" capabilities --json --non-interactive
           "$RUNNER_TEMP/wheel-smoke/bin/triton-dev" describe env.export --json --non-interactive
           "$RUNNER_TEMP/wheel-smoke/bin/triton-dev" doctor --json
+          "$RUNNER_TEMP/wheel-smoke/bin/python" "$smoke_script" --test-python "$test_python"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

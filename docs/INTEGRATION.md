@@ -9,6 +9,6 @@
 5. 提供实际构建配方、依赖、输出映射和版本信息。txops 不自动等于 raops，torch_txda 不自动等于 torch_raisa，暂不登记未知 cmodel 源码。
 6. 固定 good/bad SDK、case、输入、参考比较和设备预算，添加 sdk_integration 门禁。不具备资源则单独报告未完成。
 7. 实时 AI provider 通过 integrations/ai 接入，先使用授权的凭据机制；普通 CI 只运行离线协议。模型提案不能直接成为命令或事实。
-8. Server 后续才接任务调度、取消、SSE 和身份控制；当前只读 loopback endpoint 不承诺远程服务能力。
+8. Server 已实现 loopback 鉴权任务登记/调度、取消、SSE 和重启 interrupted；真实设备资源管理、多人权限和远程部署仍需单独接入，见 docs/OFFLINE.md。
 
 源码目标见 build/service.py，与设计文档保持一致。SDK 根目录是否可写需管理员预先配置；工具不会自动 sudo，也不会修改权限。

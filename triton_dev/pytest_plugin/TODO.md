@@ -9,6 +9,11 @@
 - [x] 参数化/markers 采集
 - [x] collect-only 不执行测试体
 
+## 本轮离线增量
+
+- [x] setup/call/teardown 与 session 事件、worker 分文件聚合
+- [x] collection 增加 fixture、行号、显式逻辑 case_id
+
 ## 待办与验收条件
 
 - [ ] setup/call/teardown、业务 context 和失败附件

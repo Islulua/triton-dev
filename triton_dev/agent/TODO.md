@@ -10,12 +10,20 @@
 - [x] 只读真实 CLI Bridge、预算和重复查询停止
 - [x] 伪造证据、自由 shell 和无依据 finish 被拒绝
 
+## 本轮离线增量
+
+- [x] 登记 recipe 的真实子进程实验、轮数/执行次数/耗时预算、累计 checkpoint
+- [x] 崩溃 pending 不自动重放、证据约束 finish、ask_user 与明确停止状态
+
 ## 待办与验收条件
 
 - [ ] 按授权机制接入模型 provider
-- [ ] 扩展实验动作，使用准备/运行/对照的真实 CLI 契约
-- [ ] 实现完整 regression 状态机和 FailurePredicate 校验
-- [ ] 问答候选、恢复状态、预算和日志检索
+- [x] 离线 agent 通过登记 recipe 调用公共真实运行服务
+- [ ] 自动准备与多组件自适应实验规划
+- [x] 离线实验状态机和 FailurePredicate 校验
+- [ ] 真实 provider 驱动的自适应 regression 流程
+- [x] 恢复状态、累计预算与证据引用
+- [ ] 更丰富的候选问答和日志检索
 - [ ] 真实 AI 的受限任务集评测，不能代替离线 tests
 
 ## 测试与环境

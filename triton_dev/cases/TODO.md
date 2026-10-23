@@ -9,9 +9,14 @@
 - [x] 独立 pytest 进程、参数化 nodeid、markers
 - [x] 收集失败不返回正常空列表
 
+## 本轮离线增量
+
+- [x] show fixture/位置详情、逻辑 case ID lint；同一逻辑用例参数实例不误报重复
+
 ## 待办与验收条件
 
-- [ ] 增加 show、fixture 详情和项目规范 lint
+- [x] 增加 show、fixture 详情和 case ID lint
+- [ ] 更多项目规范 lint
 - [ ] 固定逻辑 case ID 策略和复杂筛选
 - [ ] 默认禁止 collector 的外部副作用无法保证，需项目规范配合
 

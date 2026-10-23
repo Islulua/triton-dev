@@ -1,28 +1,130 @@
+import hmac
 import json
+import mimetypes
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlsplit, unquote
 
-from triton_dev.common.contracts import envelope
+from triton_dev.common.contracts import ToolError, envelope
 
 
-def handler_factory(capabilities):
+def handler_factory(capabilities, manager=None, token=None, ui_root=None):
+    ui_root = Path(ui_root).resolve() if ui_root else None
+    if ui_root is not None and not (ui_root / "index.html").is_file():
+        raise ToolError("UI_NOT_BUILT", "Build the frontend and pass its dist/client directory")
+    if manager is not None and (not isinstance(token, str) or len(token) < 16):
+        raise ToolError('INVALID_ARGUMENT', 'Task API requires a token of at least 16 characters')
+
     class Handler(BaseHTTPRequestHandler):
+        def reply(self, status, value, *, content_type='application/json'):
+            body = value if isinstance(value, bytes) else value.encode() if isinstance(value, str) else json.dumps(value).encode()
+            self.send_response(status)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def checked(self):
+            port = self.server.server_port
+            host = self.headers.get('Host')
+            origin = self.headers.get('Origin')
+            if host not in {f'127.0.0.1:{port}', f'localhost:{port}'} or origin not in (None, f'http://{host}'):
+                self.reply(403, envelope(error=ToolError('ORIGIN_REJECTED', 'Use a local non-cross-origin client')))
+                return False
+            if not hmac.compare_digest(self.headers.get('Authorization', '').encode('utf-8'), ('Bearer ' + token).encode('utf-8')):
+                self.reply(401, envelope(error=ToolError('UNAUTHORIZED', 'Bearer token required')))
+                return False
+            return True
+
         def do_GET(self):
-            if self.path == "/api/capabilities":
-                body = json.dumps(envelope(capabilities)).encode()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            else:
+            path = urlsplit(self.path)
+            if ui_root is not None and not path.path.startswith('/api/'):
+                host = self.headers.get('Host')
+                if host not in {f'127.0.0.1:{self.server.server_port}', f'localhost:{self.server.server_port}'}:
+                    self.reply(403, envelope(error=ToolError('ORIGIN_REJECTED', 'Local host required')))
+                    return
+                relative = 'index.html' if path.path in ('/', '/index.html') else unquote(path.path).lstrip('/')
+                if relative != 'index.html' and not relative.startswith('assets/'):
+                    self.send_error(404)
+                    return
+                try:
+                    file = (ui_root / relative).resolve()
+                    if not file.is_relative_to(ui_root) or not file.is_file():
+                        self.send_error(404)
+                        return
+                    self.reply(200, file.read_bytes(), content_type=mimetypes.guess_type(file.name)[0] or 'application/octet-stream')
+                except (OSError, ValueError):
+                    self.send_error(404)
+                return
+            if path.path == '/api/capabilities':
+                self.reply(200, envelope(capabilities))
+                return
+            if manager is None:
                 self.send_error(404)
+                return
+            if not self.checked():
+                return
+            try:
+                parts = path.path.strip('/').split('/')
+                if parts == ['api', 'jobs']:
+                    value = [{'job_id': name} for name in manager.jobs]
+                elif parts == ['api', 'tasks']:
+                    value = manager.store.list()
+                elif len(parts) == 3 and parts[:2] == ['api', 'tasks']:
+                    value = manager.store.read(parts[2])
+                elif len(parts) == 4 and parts[:2] == ['api', 'tasks'] and parts[3] == 'events':
+                    after = int(self.headers.get('Last-Event-ID') or parse_qs(path.query).get('after', ['0'])[0])
+                    events = manager.store.events(parts[2], after)
+                    body = ''.join(f"id: {e['id']}\nevent: {e['type']}\ndata: {json.dumps(e)}\n\n" for e in events)
+                    # Finite SSE batches; authenticated clients reconnect using Last-Event-ID.
+                    self.reply(200, body or ': no new events\n\n', content_type='text/event-stream')
+                    return
+                else:
+                    self.send_error(404)
+                    return
+                self.reply(200, envelope(value))
+            except (ToolError, ValueError) as exc:
+                error = exc if isinstance(exc, ToolError) else ToolError('INVALID_ARGUMENT', str(exc))
+                self.reply(400, envelope(error=error))
+
+        def do_POST(self):
+            if manager is None:
+                self.send_error(404)
+                return
+            if not self.checked():
+                return
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 65536:
+                    raise ToolError('INVALID_ARGUMENT', 'JSON request size must be 1..65536 bytes')
+                self.connection.settimeout(5)
+                data = json.loads(self.rfile.read(length))
+                if not isinstance(data, dict):
+                    raise ToolError('INVALID_ARGUMENT', 'JSON object required')
+                parts = urlsplit(self.path).path.strip('/').split('/')
+                if parts == ['api', 'tasks'] and set(data) == {'job_id', 'idempotency_key'}:
+                    value = manager.submit(data['job_id'], data['idempotency_key'])
+                elif len(parts) == 4 and parts[:2] == ['api', 'tasks'] and parts[3] == 'cancel' and data == {}:
+                    value = manager.cancel(parts[2])
+                else:
+                    raise ToolError('ACTION_NOT_ALLOWED', 'Only registered jobs or cancellation are accepted')
+                self.reply(200, envelope(value))
+            except (ToolError, ValueError, OSError) as exc:
+                error = exc if isinstance(exc, ToolError) else ToolError('INVALID_ARGUMENT', str(exc))
+                self.reply(400, envelope(error=error))
 
         def log_message(self, *args):
             pass
     return Handler
 
 
-def serve(capabilities, port=8765):
-    # Loopback-only, read-only. No arbitrary paths, shell or task endpoint.
-    with ThreadingHTTPServer(("127.0.0.1", port), handler_factory(capabilities)) as server:
-        server.serve_forever()
+def serve(capabilities, port=8765, *, manager=None, token=None, ui_root=None):
+    try:
+        with ThreadingHTTPServer(('127.0.0.1', port), handler_factory(capabilities, manager, token, ui_root)) as server:
+            server.serve_forever()
+    finally:
+        if manager:
+            manager.close()

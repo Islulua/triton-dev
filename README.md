@@ -1,6 +1,6 @@
 # triton-dev
 
-一个模块化的 SDK 环境、测试执行与证据驱动回归工具集。**v0.1 原型，无需真实 Triton 即可运行离线测试。** 所有尚未接入真实环境的能力都会标记 `not_checked` 或返回 `UNSUPPORTED`，不会伪造成功。
+一个模块化的 SDK 环境、测试执行与证据驱动回归工具集。**v0.2 离线自动化原型，无需真实 Triton 即可运行离线测试。** 所有尚未接入真实环境的能力都会标记 `not_checked` 或返回 `UNSUPPORTED`，不会伪造成功。
 
 ## 安装
 
@@ -13,22 +13,30 @@ triton-dev capabilities --json
 triton-dev describe env.prepare --json
 ```
 
-工具自身安装在独立 venv，避免被 SDK wheel 切换覆盖。运行时仅依赖 Python 标准库，支持 Python 3.10+、POSIX。SDK 的 cp310/Linux x86_64 wheel 仍要求相匹配的解释器和平台；本机 macOS 测试仅证明受控逻辑。
+工具自身安装在独立 venv，避免被 SDK wheel 切换覆盖。运行时使用标准库和 packaging，支持 Python 3.10+、POSIX。SDK 的 cp310/Linux x86_64 wheel 仍要求相匹配的解释器和平台；本机 macOS 测试仅证明受控逻辑。
 
 ## 已实现的最小闭环
 
-| 模块 | v0.1 能力 |
+| 模块 | 当前能力 |
 | --- | --- |
 | env | 按名称扫描 SDK、日期选择、wheel 元数据/哈希、HTTP daily 下载、校验与安全解压、离线 venv 安装、Python 包覆盖、变量导出、子进程和终端使用 |
 | build | 六个源码目标的发现与 plan；实际编译明确不支持 |
 | cases / pytest_plugin | 独立进程中的真实 pytest collection，包含参数化 nodeid 和 markers |
-| run / execution | 测试或任意命令执行、独立临时缓存、超时和进程组取消 |
-| diagnose | good/bad 重复执行、文本故障判据、基线失效判断、SDK 范围证据 |
-| agent | 离线 ScriptedModel、严格问答校验、真实只读 CLI Bridge、预算、证据校验与停止；无实时模型调用 |
-| report / doctor | 已有证据摘要、只读平台与目录检查 |
-| serve | 只监听 loopback 的只读 `/api/capabilities`，无任务执行或前端 |
+| run / execution | 子进程隔离、流式有界日志；runs 显式持久化、pytest 阶段结果、失败项复测 |
+| diagnose | good/bad 对照、结构化故障判据、预算内穷举历史搜索；不自动推断组件/commit 归属 |
+| agent | 离线 ScriptedModel、只读协议与登记实验工作流、预算、checkpoint 恢复及证据校验；无实时模型调用 |
+| report / doctor | 已有证据摘要、脱敏证据包导出和完整性校验、只读预检 |
+| serve | loopback 能力查询、可选鉴权任务队列、幂等提交、取消、恢复和 SSE；可选同源网页前端 |
 
 状态总览见 [STATUS.md](STATUS.md)，每个模块维护自己的 `TODO.md`，明确已完成、待办和验收条件。
+
+## 新增离线自动化
+
+已加入命名版本组合、wheel 预检、持久运行与复测、结构化判据、历史搜索、证据包、脚本 agent 工作流及任务 API。命令、配置和验证边界见 [离线自动化操作手册](docs/OFFLINE.md)。可运行 `python examples/offline_demo.py --workdir /new/demo-directory` 体验完整合成 SDK 闭环。
+
+## 网页前端
+
+浅色/青绿工作台位于 frontend/，支持组合创建、版本比较、用例运行和诊断的完整演示。真实 API 已接入登记任务提交/取消与状态更新，其他模块仍明确标为演示。开发预览及 `serve --ui` 使用方式见 [前端说明](frontend/README.md)。
 
 ## 使用
 
@@ -52,6 +60,8 @@ triton-dev env export --sdk latest --format sh
 triton-dev env export --current --format json --output environment.json
 ```
 
+`--python` 支持可执行路径或 PATH 中的名称，实际由该解释器创建隔离 venv，并在安装前核对 Python 版本和平台。创建失败返回 `VENV_CREATION_FAILED`，身份不符返回 `PYTHON_IDENTITY_MISMATCH`，均不发布 ready 状态。准备协议 v3 不复用旧版环境缓存；已有目录不会被自动覆盖或删除。此校验不等于 wheel ABI 或原生运行验证。
+
 指定 SDK 导出不会默认安装，只有显式 `--prepare` 才准备。`--current` 只读当前进程继承的 export 变量，不读取父 shell 局部变量/函数。输出含 `variables` 和 `unset`；显式文件权限设为 0600。JSON 模式输出版本化 envelope，进度和菜单不混入 stdout。
 
 终端集成（bash/zsh）：
@@ -65,7 +75,7 @@ triton-dev env deactivate
 
 每个终端独立绑定环境；切换不会修改其他终端或已经运行的进程。`update` 获取远端最新整套 SDK，失败不应用变量；不会覆盖活动 venv。未集成时使用 `env shell` 子终端，直接 `env use` 会提示需要集成。
 
-人工候选选择示例：`triton-dev env plan -i`；自动化使用完整参数和 `--non-interactive`。目前交互为实际候选的编号选择，搜索式 TUI、`mix/save` 是 TODO。显式的 `--cmodel-sdk` 当前返回 `UNSUPPORTED`，因为共享 lib 的组件归属未确认。
+人工候选选择示例：`triton-dev env plan -i`；自动化使用完整参数和 `--non-interactive`。目前交互为实际候选的编号选择，搜索式 TUI 是 TODO；Python wheel 来源混合及命名组合保存已支持。显式的 `--cmodel-sdk` 当前返回 `UNSUPPORTED`，因为共享 lib 的组件归属未确认。
 
 ## 无 Triton 环境的演示与测试
 
@@ -105,4 +115,4 @@ triton-dev doctor --json
 - [AI/代码协作规则](AGENTS.md)
 - [当前进度](STATUS.md)
 
-默认没有为每次运行生成报告文件；用户显式重定向或 `--output` 时才导出，准备状态与锁集中在工具缓存。没有第三方运行时服务或数据库。
+原有 env exec 默认不生成报告；新增 runs、agent workflow 和 Server tasks 显式写入本地运行记录。可分享报告由显式导出命令或 `--output` 产生，准备状态与锁集中在工具缓存。没有必需的第三方服务或数据库。
