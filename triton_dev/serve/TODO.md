@@ -53,3 +53,16 @@ loopback 任务服务及可选同源静态前端；真实环境页面待接入�
 - 扩展接口：服务登记 schema/default/version/固定编译函数，项目 allowlist；内置失败阈值、慢阶段统计和输出捕获。HTTP 不接受自由命令。
 - xdist 同次运行共享源码工作目录，设备尚无租约；默认逐 case 模式保留。远程多用户身份及任意 fixture 参数覆盖仍待实现。
 - 验证：Python 105 passed、ruff通过；前端模型5项和静态打包4项通过。详细使用及边界见 docs/PYTEST_SERVER.md。
+
+## Profiling demo（2026-10-26）
+
+- [x] 单case/模拟环境选择、预热/采样/seed、持久报告和幂等HTTP接口
+- [x] 指标、采样曲线、Roofline假设模型、kernel排行、轨道时间线/缩放/事件详情、HTML/JSON/Chrome Trace导出
+- [x] mock来源显式标记与适配器边界；17项新测试含真实HTTP鉴权、指标/trace一致性和非法输入
+- [ ] 真实板卡工具、pytest绑定、环境revision验证、设备lease、异步取消与时钟校准
+
+详见docs/PROFILING.md。
+
+多引擎流水线增量：8 tiles、双缓冲、11条Matmul轨道，Tile/Buffer/依赖链、跨引擎重叠和事件筛选；Trace保留flow，HTML同步分轨。新测试验证依赖完成、同引擎无重叠、缓冲复用与时间口径；仍为mock，未提交。
+
+2026-10-26 交付整理：本轮Profiling demo、时间线导航、运行统计、逐配置报告及紧凑布局纳入本次提交；上文“未提交”为各增量开发时记录。板卡测量仍为mock，回归agent新增内容为设计文档。

@@ -73,3 +73,11 @@ SDK_NOT_FOUND、SDK_INCOMPLETE、INVALID_DATE、WHEEL_SELECTION_FAILED、ENV_NOT
 | GET /api/tasks/:id/events?after=N | 有限批次 SSE 状态事件；阶段数据通过任务详情刷新 |
 
 幂等键必须对应相同 job、选择、隔离与 parent，workers 和规范化扩展配置也参与比较；变更请求复用键返回 IDEMPOTENCY_CONFLICT。collection/run 数据 schema_version 仍为1，字段为向后兼容新增。
+
+## Profiling demo HTTP
+
+新增鉴权GET /api/profiling/catalog、POST/GET /api/profiling/reports、GET /api/profiling/reports/:id 与 /trace。仅mock适配器，state=generated、correctness=not_checked，完整严格请求字段和边界见[Profiling](PROFILING.md)。
+
+pytest collection元数据新增可选operator字段，使用pytest.mark.operator(name)显式标注；已有HTTP路径和运行请求不变。批次统计由页面根据原始test_results、收集元数据和父记录推导，统计导出schema_version=1；口径见[批次统计](RUN_STATISTICS.md)。
+
+逐配置测试报告由现有collection、test_results和原始test_started/worker_exit事件生成，不修改HTTP协议或原始outcome。展示分类、时间与导出字段见[测试报告](TEST_REPORT.md)。

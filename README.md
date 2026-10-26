@@ -116,6 +116,7 @@ triton-dev doctor --json
 - [当前进度](STATUS.md)
 - [pytest 服务、隔离与复测](docs/PYTEST_SERVER.md)
 - [单服务器多人平台目标架构](docs/MULTI_USER_SERVER.md)
+- [SDK 回归定位 Agent 设计](docs/REGRESSION_AGENT.md)
 
 原有 env exec 默认不生成报告；新增 runs、agent workflow 和 Server tasks 显式写入本地运行记录。可分享报告由显式导出命令或 `--output` 产生，准备状态与锁集中在工具缓存。没有必需的第三方服务或数据库。
 
@@ -125,3 +126,11 @@ triton-dev doctor --json
 - 扩展接口：服务登记 schema/default/version/固定编译函数，项目 allowlist；内置失败阈值、慢阶段统计和输出捕获。HTTP 不接受自由命令。
 - xdist 同次运行共享源码工作目录，设备尚无租约；默认逐 case 模式保留。远程多用户身份及任意 fixture 参数覆盖仍待实现。
 - 验证：Python 105 passed、ruff通过；前端模型5项和静态打包4项通过。详细使用及边界见 docs/PYTEST_SERVER.md。
+
+## Profiling demo
+
+网页新增Profiling入口，模拟单case与环境下的板卡事件/计数器，并生成可交互性能报告。支持原始JSON与Chrome Trace导出，供Perfetto查看。此demo不执行真实板卡测试；使用方法、口径和接入边界见[Profiling说明](docs/PROFILING.md)。
+
+网页运行详情新增[批次统计总览](docs/RUN_STATISTICS.md)，按配置去重展示结果/算子/阶段分布、慢配置和复测变化，支持图表联动筛选；operator元数据可显式标注。
+
+[测试报告预览](docs/TEST_REPORT.md)按文件、逻辑用例和配置展示结果色块、执行时间与证据，提供独立页面和离线HTML/JSON导出。

@@ -58,3 +58,9 @@ Python wheel 不包含网页资源；请从仓库或 sdist 的 frontend/ 构建�
 - 扩展接口：服务登记 schema/default/version/固定编译函数，项目 allowlist；内置失败阈值、慢阶段统计和输出捕获。HTTP 不接受自由命令。
 - xdist 同次运行共享源码工作目录，设备尚无租约；默认逐 case 模式保留。远程多用户身份及任意 fixture 参数覆盖仍待实现。
 - 验证：Python 105 passed、ruff通过；前端模型5项和静态打包4项通过。详细使用及边界见 docs/PYTEST_SERVER.md。
+
+Profiling导航提供内置mock报告预览；连接本地API后可选择模拟case/环境并生成、保存和切换报告。支持时间线采样/缩放/事件详情及JSON/Chrome Trace导出，真实板卡尚未接入。详见../docs/PROFILING.md。
+
+运行详情默认进入“运行总览”，支持批次结果/算子分布/失败阶段/最慢配置及复测变化，图表可筛选到配置详情。真实pytest与浏览器演示来源分别标注；演示缺失计时不补造。详见../docs/RUN_STATISTICS.md。
+
+测试报告可从左侧导航或运行详情“报告预览”进入，按文件/用例/配置展示带PASS、FAIL、CRASH等标签的色块，支持时间、worker、失败详情及完整HTML/JSON导出。详见../docs/TEST_REPORT.md。

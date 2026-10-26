@@ -23,6 +23,7 @@ def pytest_configure(config):
     if durations is not None:
         config.option.durations = durations or None
     config.addinivalue_line("markers", "case_id(value): stable logical test identifier")
+    config.addinivalue_line("markers", "operator(name): explicit operator name for run statistics")
     if hasattr(config, 'workerinput') and config.getoption('--triton-dev-events'):
         worker = worker_identity(config)
         root = Path(config.getoption('--triton-dev-events')).parent / 'workers' / worker
@@ -47,6 +48,8 @@ def pytest_collection_finish(session):
                  "markers": sorted({m.name for m in item.iter_markers()}),
                  "fixtures": sorted(item.fixturenames), "line": item.location[1] + 1,
                  "logical_nodeid": item.nodeid.rsplit('::', 1)[0] + '::' + (getattr(item, 'originalname', None) or item.name),
+                 "operator": next((m.args[0].strip() for m in item.iter_markers("operator")
+                                   if m.args and isinstance(m.args[0], str) and 0 < len(m.args[0].strip()) <= 128), None),
                  "parameter_id": getattr(getattr(item, 'callspec', None), 'id', None),
                  "parameters": {k: repr(v)[:512] for k, v in getattr(getattr(item, "callspec", None), "params", {}).items()},
                  "case_id": next((m.args[0] for m in item.iter_markers("case_id") if m.args), None)}

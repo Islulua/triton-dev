@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { request, downloadJson } from './api';
 import './pytest.css';
 import { groupCases, selectConfigurations } from './pytest-model';
+import { RunOverview } from './RunOverview';
+import { TestReportPreview } from './TestReportPreview';
+import { buildRunStatistics, filterStatisticRows, RESULT_NAMES } from './run-statistics';
 const names = {passed:'通过',failed:'失败',skipped:'跳过',xfailed:'预期失败',xpassed:'意外通过',pending:'未开始',running:'运行中',incomplete:'未完成',queued:'排队中',cancelled:'已取消',error:'执行错误',timeout:'超时',interrupted:'已中断',finished:'已退出',crashed:'崩溃',not_started:'未启动'};
 const active = r => ['queued','running'].includes(r?.state);
 const time = n => n ? new Date(n*1000).toLocaleString('zh-CN') : '—';
@@ -40,7 +43,8 @@ export function PytestWorkspace({token,jobs,records}) {
   const [caseId,setCaseId]=useState('');
   const [query,setQuery]=useState('');
   const [failedOnly,setFailedOnly]=useState(false);
-  const [tab,setTab]=useState('phases');
+  const [tab,setTab]=useState('overview');
+  const [resultFilter,setResultFilter]=useState({});
   const [busy,setBusy]=useState(false);
   const [optimistic,setOptimistic]=useState(null);
   const [error,setError]=useState('');
@@ -51,6 +55,11 @@ export function PytestWorkspace({token,jobs,records}) {
   const collection=collections.find(r=>r.id===collectionId)||collections[0];
   const history=matching.filter(r=>r.request.operation==='run');
   const run=history.find(r=>r.id===runId);
+  const runCollection=collections.find(c=>c.id===run?.request.source_id);
+  const parentRun=history.find(r=>r.id===run?.parent);
+  const runStats=buildRunStatistics(run||{},runCollection?.collection||[],parentRun);
+  const resultVisible=filterStatisticRows(runStats,resultFilter);
+  const inspectResults=filter=>{setResultFilter(filter);setCaseId('');setTab('phases');};
   useEffect(()=>{setSelected([]);setQuery('');setFailedOnly(false);setExpanded(new Set());},[collection?.id]);
   const projectInfo=projects.find(p=>p.job_id===project);
   useEffect(()=>{setWorkers(1);setIsolation('case');setExtensions({});},[project]);
@@ -62,7 +71,7 @@ export function PytestWorkspace({token,jobs,records}) {
   const visible=(collection?.collection||[]).filter(c=>`${c.nodeid} ${c.markers.join(' ')} ${JSON.stringify(c.parameters)}`.toLowerCase().includes(query.toLowerCase())&&(!failedOnly||latest.get(c.nodeid)==='failed'));
   const groups=groupCases(visible);
   const fullGroups=new Map(groupCases(collection?.collection||[]).map(g=>[g.id,g]));
-  const current=run?.test_results?.find(c=>c.nodeid===caseId)||run?.test_results?.find(c=>c.outcome==='failed')||run?.test_results?.[0];
+  const current=resultVisible.find(c=>c.nodeid===caseId)||resultVisible.find(c=>c.outcome==='failed')||resultVisible[0];
   async function post(path,body,done){
     if(pending.current)return;pending.current=true;setBusy(true);setError('');
     const signature=path+JSON.stringify(body),key=keys.current.get(signature)||crypto.randomUUID();keys.current.set(signature,key);
@@ -70,7 +79,7 @@ export function PytestWorkspace({token,jobs,records}) {
     catch(e){setError(e.message);}finally{pending.current=false;setBusy(false);}
   }
   const collect=()=>post('/tasks',{job_id:project},r=>{setCollectionId(r.id);setSurface('collection');});
-  const open=r=>{setRunId(r.id);setSurface('result');setCaseId('');setTab('phases');};
+  const open=r=>{setRunId(r.id);setSurface('result');setCaseId('');setResultFilter({});setTab('overview');};
   const start=()=>post('/pytest/runs',{collection_id:collection.id,nodeids:selected,isolation,workers:Number(workers),extensions:options},open);
   const rerun=mode=>post(`/tasks/${run.id}/rerun`,{mode},open);
   async function cancel(){try{await request(`/tasks/${run.id}/cancel`,{token,method:'POST',body:{}});}catch(e){setError(e.message);}}
@@ -113,10 +122,13 @@ export function PytestWorkspace({token,jobs,records}) {
     {surface==='history'&&<>{!history.length?<p className="pytest-help">尚无 pytest 执行记录，先收集并运行用例。</p>:<div className="table-scroll"><table className="data-table pytest-history"><thead><tr><th>运行 / 来源</th><th>结果</th><th>用例统计</th><th>隔离 / 时间</th></tr></thead><tbody>{history.map(r=><tr key={r.id}><td><button className="row-name mono" onClick={()=>open(r)}>{r.id.slice(-12)}</button><span className="secondary-line">{r.parent?`复测自 ${r.parent.slice(-12)}`:'首次运行'}</span><span className="secondary-line mono">{r.source_snapshot?.sha256?.slice(0,12)}</span></td><td><Badge value={r.state}/></td><td>{r.summary?.passed||0} 通过 / {r.summary?.failed||0} 失败<span className="secondary-line">共 {r.summary?.total??r.request.nodeids.length} 项</span></td><td>{r.request.isolation==='xdist'?`xdist × ${r.request.workers}`:r.request.isolation==='case'?'逐配置':'session'}<span className="secondary-line">{time(r.created_at)}</span></td></tr>)}</tbody></table></div>}</>}
     {surface==='result'&&(!run?<p role="status">正在读取新运行记录…</p>:<>
       <button className="back-link" onClick={()=>setSurface('history')}>← 返回 pytest 运行记录</button><div className="pytest-run-heading"><div><h2>pytest 运行详情</h2><p className="mono">{run.id}</p></div><div className="toolbar-actions"><Badge value={run.state}/>{active(run)?<button className="button" onClick={cancel}>取消 pytest 运行</button>:<><button className="button primary" disabled={busy||!run.summary?.failed} onClick={()=>rerun('failed')}>仅复测失败项</button><button className="button" disabled={busy} onClick={()=>rerun('all')}>原配置全部复测</button></>}<button className="button" onClick={()=>downloadJson(`${run.id}.json`,run)}>导出 pytest 报告</button></div></div>
-      {run.parent&&<div className="info">复测来自 <span className="mono">{run.parent}</span>。原始记录保留，沿用原源码快照和解释器配置。</div>}{run.comparison&&<div className="pytest-comparison"><strong>本次复测对照（仅所选用例）</strong>{run.comparison.map(c=><p key={c.nodeid}><span className="mono">{c.nodeid}</span><Badge value={c.before}/><span>→</span><Badge value={c.after}/><small>{c.before_phase||'—'} → {c.after_phase||'—'}</small></p>)}</div>}{run.error&&<div className="error-banner" role="alert">{run.error.code}：{run.error.message}</div>}{run.error?.details&&Object.keys(run.error.details).length>0&&<pre className="json-view">{JSON.stringify(run.error.details,null,2)}</pre>}
-      <div className="pytest-summary" aria-label="用例统计">{['total','passed','failed','skipped','xfailed','xpassed','incomplete','pending','running'].map(k=><div key={k}><strong>{run.summary?.[k]||0}</strong><span>{k==='total'?'全部':names[k]}</span></div>)}</div>
-      <div className="pytest-tabs tabs" role="tablist">{[['phases','用例与阶段'],['workers','Worker 日志'],['logs','进程日志'],['snapshot','环境与源码'],['evidence','附件与证据']].map(([id,label])=><button key={id} role="tab" aria-selected={tab===id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{label}</button>)}</div>
-      {tab==='phases'&&<div className="pytest-result-layout"><div className="pytest-case-nav" aria-label="执行结果列表">{(run.test_results||[]).map(c=><button key={c.nodeid} className={current?.nodeid===c.nodeid?'selected':''} onClick={()=>setCaseId(c.nodeid)}><Badge value={c.outcome}/><span><span className="mono">{c.nodeid}</span><small className="secondary-line">{c.workers?.join(', ')||'等待分配'}</small></span></button>)}</div><div className="pytest-case-detail">{current?<><h3 className="mono">{current.nodeid}</h3><p className="pytest-help">耗时 {current.duration.toFixed(3)} 秒 · {current.failure_phase?`${current.failure_phase} 阶段失败`:names[current.outcome]}</p>{['setup','call','teardown'].map(phase=>{const report=current.stages.find(s=>s.when===phase);return <details key={phase} open={report?.outcome==='failed'} className="pytest-phase"><summary><strong>{phase}</strong><small>{report?.worker_id||'—'}</small><Badge value={report?.outcome||(active(run)?'pending':'incomplete')}/><span>{report?`${report.duration.toFixed(3)}s`:'无报告'}</span></summary>{report&&<><pre className="log-view">{report.longrepr||'该阶段没有失败堆栈。'}</pre>{(report.stdout||report.stderr)&&<><h4>捕获输出（累计）</h4><pre className="log-view">{report.stdout}{report.stderr}</pre></>}<h4>结构化 context / properties</h4><pre className="json-view">{JSON.stringify({context:report.context,properties:report.properties},null,2)}</pre></>}</details>;})}</>:<p>等待首个用例事件。尚无报告不等于通过。</p>}</div></div>}
+      {run.parent&&<div className="info">复测来自 <span className="mono">{run.parent}</span>。原始记录保留，沿用原源码快照和解释器配置。</div>}{run.error&&<div className="error-banner" role="alert">{run.error.code}：{run.error.message}</div>}{run.error?.details&&Object.keys(run.error.details).length>0&&<pre className="json-view">{JSON.stringify(run.error.details,null,2)}</pre>}
+      {!['overview','report'].includes(tab)&&<div className="pytest-summary" aria-label="用例统计">{['total','passed','failed','skipped','xfailed','xpassed','incomplete','pending','running'].map(k=><div key={k}><strong>{run.summary?.[k]||0}</strong><span>{k==='total'?'全部':names[k]}</span></div>)}</div>}
+      <div className="pytest-tabs tabs" role="tablist">{[['overview','运行总览'],['report','报告预览'],['phases','用例与阶段'],['workers','Worker 日志'],['logs','进程日志'],['snapshot','环境与源码'],['evidence','附件与证据']].map(([id,label])=><button key={id} role="tab" aria-selected={tab===id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{label}</button>)}</div>
+      {tab==='report'&&<TestReportPreview key={run.id} record={run} collection={runCollection?.collection||[]} onInspect={inspectResults}/>}
+      {tab==='overview'&&<RunOverview key={run.id} record={run} collection={runCollection?.collection||[]} parent={parentRun} onInspect={inspectResults}/>}
+      {tab==='phases'&&Object.keys(resultFilter).length>0&&<div className="runstats-filter"><span>统计筛选 · {[resultFilter.operator,resultFilter.status&&RESULT_NAMES[resultFilter.status],resultFilter.phase&&`${resultFilter.phase} 阶段失败`,resultFilter.nodeid].filter(Boolean).join(' / ')} · 匹配 {resultVisible.length} 个配置</span><button className="text-button" onClick={()=>setResultFilter({})}>清除筛选</button></div>}
+      {tab==='phases'&&<div className="pytest-result-layout"><div className="pytest-case-nav" aria-label="执行结果列表">{resultVisible.map(c=><button key={c.nodeid} className={current?.nodeid===c.nodeid?'selected':''} onClick={()=>setCaseId(c.nodeid)}><Badge value={c.outcome}/><span><span className="mono">{c.nodeid}</span><small className="secondary-line">{c.workers?.join(', ')||'等待分配'}</small></span></button>)}</div><div className="pytest-case-detail">{current?<><h3 className="mono">{current.nodeid}</h3><p className="pytest-help">耗时 {current.duration.toFixed(3)} 秒 · {current.failure_phase?`${current.failure_phase} 阶段失败`:names[current.outcome]}</p>{['setup','call','teardown'].map(phase=>{const report=current.stages.find(s=>s.when===phase);return <details key={phase} open={report?.outcome==='failed'} className="pytest-phase"><summary><strong>{phase}</strong><small>{report?.worker_id||'—'}</small><Badge value={report?.outcome||(active(run)?'pending':'incomplete')}/><span>{report?`${report.duration.toFixed(3)}s`:'无报告'}</span></summary>{report&&<><pre className="log-view">{report.longrepr||'该阶段没有失败堆栈。'}</pre>{(report.stdout||report.stderr)&&<><h4>捕获输出（累计）</h4><pre className="log-view">{report.stdout}{report.stderr}</pre></>}<h4>结构化 context / properties</h4><pre className="json-view">{JSON.stringify({context:report.context,properties:report.properties},null,2)}</pre></>}</details>;})}</>:<p>本次筛选没有匹配配置，或尚未收到结果。尚无报告不等于通过。</p>}</div></div>}
       {tab==='workers'&&<WorkerLogs reports={run.worker_reports||[]}/>}
       {tab==='logs'&&<><p className="pytest-help">执行中展示已写入输出；pytest 捕获内容在阶段报告查看。终态保留有界日志尾部。</p><pre className="log-view expanded">{run.result?.stdout||run.live_logs?.stdout||'暂无 stdout'}{'\n'}{run.result?.stderr||run.live_logs?.stderr}</pre>{(run.stages||[]).filter(s=>s.type==='collection_error').map((s,i)=><pre className="log-view" key={i}>{s.longrepr}</pre>)}</>}
       {tab==='snapshot'&&<><p className="pytest-help">源码按 SHA256 留档。登记解释器启动前检查包版本；设备、原生库和网络没有容器化。</p><pre className="json-view">{JSON.stringify({source:run.source_snapshot,isolation:run.isolation,interpreter:run.request.environment?.interpreter||run.request.python,runtime:run.runtime,collection:run.request.source_id,nodeids:run.request.nodeids,workers:run.request.workers||1,extensions:run.request.extensions,extension_versions:run.request.extension_versions},null,2)}</pre></>}

@@ -9,6 +9,8 @@ from triton_dev.common.contracts import ToolError, envelope
 
 
 def handler_factory(capabilities, manager=None, token=None, ui_root=None):
+    from .profiling import ProfileStore, catalog, chrome_trace, html_report
+    profiles = ProfileStore(manager.store.root / 'profiles') if manager is not None else None
     ui_root = Path(ui_root).resolve() if ui_root else None
     if ui_root is not None and not (ui_root / "index.html").is_file():
         raise ToolError("UI_NOT_BUILT", "Build the frontend and pass its dist/client directory")
@@ -69,7 +71,18 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 return
             try:
                 parts = path.path.strip('/').split('/')
-                if parts == ['api', 'pytest', 'extensions']:
+                if parts == ['api', 'profiling', 'catalog']:
+                    value = catalog()
+                elif parts == ['api', 'profiling', 'reports']:
+                    value = profiles.list()
+                elif len(parts) in (4, 5) and parts[:3] == ['api', 'profiling', 'reports']:
+                    value = profiles.read(parts[3])
+                    if len(parts) == 5:
+                        if parts[4] not in {'trace', 'html'}:
+                            self.send_error(404)
+                            return
+                        value = chrome_trace(value) if parts[4] == 'trace' else {'html': html_report(value)}
+                elif parts == ['api', 'pytest', 'extensions']:
                     from triton_dev.execution.options import describe_extensions
                     value = {'schema_version': 1, 'extensions': describe_extensions()}
                 elif parts == ['api', 'jobs']:
@@ -118,7 +131,9 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 if not isinstance(data, dict):
                     raise ToolError('INVALID_ARGUMENT', 'JSON object required')
                 parts = urlsplit(self.path).path.strip('/').split('/')
-                if parts == ['api', 'tasks'] and set(data) == {'job_id', 'idempotency_key'}:
+                if parts == ['api', 'profiling', 'reports']:
+                    value = profiles.create(data)
+                elif parts == ['api', 'tasks'] and set(data) == {'job_id', 'idempotency_key'}:
                     value = manager.submit(data['job_id'], data['idempotency_key'])
                 elif (parts == ['api', 'pytest', 'runs']
                       and {'collection_id', 'nodeids', 'isolation', 'idempotency_key'} <= set(data)

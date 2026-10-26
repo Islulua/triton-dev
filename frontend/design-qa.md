@@ -78,3 +78,59 @@ final result: passed
 - 手机：CSS390×844、根scrollWidth379，无根水平溢出；worker卡片两列，长日志内部滚动，截图design/xdist-mobile-workers.png。原生DPR截图有合成缩放与空白，不用于尺寸测量。
 - 控制台warn/error为空；Python105项、前端模型5项/静态打包4项通过，ruff与构建通过。安装包另有真实xdist执行smoke。
 - 无新增P0/P1/P2；保留系统字形等既有P3，屏幕阅读器、真实硬件并行和跨平台字体尚未验证。
+
+## Profiling demo 增量验收（2026-10-26）
+
+final result: passed
+
+- 继承现有浅色青绿设计，新增Profiling导航与单case/环境/预热/采样表单。报告布局含元数据、4项指标、采样曲线、Roofline与kernel排行；时间线单独分tab，长时间线内部水平滚动。
+- 真实浏览器操作：candidate + matmul-4096 + warmup3/repeats12/seed42，经本地API生成报告；非法repeats=0被拒绝，报告没有覆盖。时间线2×缩放、kernel详情有效。Trace下载读回为60事件/3轨道/原环境版本。
+- Chrome Trace参照Perfetto兼容格式，无外部上传；独立HTML报告无脚本和外部资源，已在本地浏览器打开验证指标、曲线、事件图与原始元数据。
+- CSS桌面1487×1058，手机390×844；手机根scrollWidth379无横向溢出，时间线/表格有内部滚动。
+- 截图：profiling-overview-desktop-content.png、profiling-timeline-detail-content.png、profiling-mobile.png、profiling-html-native-content.png。工作台原生DPR1.4截图1476×1051有效内容约1062×756，-content仅裁空白、不缩放；独立HTML截图为1265×712，保留全部内容不裁切；fullPage截图存在右侧截断，只作历史记录，不作为最终依据。以上图已打开检查，非与旧稿同业务状态逐像素比对。
+- 系统字体、白表面、teal主色和Tabler图标延续既有设计；图表为数据SVG，无新增图片资源。mock/假设/未验证在页面与导出里保留。
+- 无新增P0/P1/P2。保留系统字形等既有P3；屏幕阅读器、跨系统、真实板卡与超大trace未验证。
+- 验证：Python122通过（17项profiling）、ruff通过、前端5+4通过、前端和Python构建通过、sdist含fixture、仓库外安装后的capture/report/trace/HTML smoke通过。
+
+## 多引擎流水线增量验收
+
+- 8 tiles、双缓冲，默认Matmul 11轨道；每采样58事件，显示跨引擎重叠。按kernel筛选剩4轨道；选Tile4矩阵事件有2条直接依赖连线，详情含Tile/Buffer/上游事件。
+- 桌面CSS1487×1214、390px手机根scrollWidth379；截图profiling-pipeline.png（原生DPR1.4截图裁除空白，无缩放）、profiling-pipeline-mobile.png。已检查桌面分轨布局、颜色、事件标签和依赖箭头，沿用既有字体/品牌，无新增P0/P1/P2。长时间线在内部横向滚动，11行通过页面纵向滚动查看。
+- 新版HTML按引擎而非按单事件分行，Chrome Trace含s/f依赖flow。原始报告和历史口径保留，model_version=2采用pipeline span。
+- 完整Python125项、ruff、前端5+4项通过。新增3项参数化测试覆盖三种case的依赖排序、同引擎互斥、双缓冲复用、流水线时间与flow一致性。设备数据均为mock。
+
+## 时间线快捷导航验收
+
+- 悬停/焦点范围的快捷键、指针锚定滚轮缩放和Shift滚轮横移已实现；倍率1..32与下拉框同步。默认滚轮不拦截，编辑输入框和下拉框时不接管单键导航，卸载清理全局监听。
+- 实际浏览器验证W变2×、D令scrollLeft增大、0恢复1×/scrollLeft=0，输入焦点ArrowRight不改变时间线倍率；控制台warn/error为空。锚定时间计算与浏览器modifier键保留由模型测试验证。
+- 提示与焦点样式截图profiling-shortcuts-final.png，原生DPR截图裁空白不缩放；没有更改原有轨道与配色，无新增P0/P1/P2。模型6项、静态打包4项及构建通过。
+
+## 固定引擎名称列
+
+- 使用不透明sticky标签层固定左侧名称与ENGINE/TRACK表头，依赖路径绘制在标签层下。缩放锚点限制在绘图区，默认使用绘图区中心。
+- 独立浏览器页验证：水平scrollLeft从0到701、事件left从437到−264，名称列left保持247；滚动到End（963）后全部11行标签和表头仍贴齐容器左缘。截图profiling-fixed-column.png已检查。
+- 前端模型6项和构建通过，差异空白检查通过，无新增P0/P1/P2；修改未提交。
+
+## 批次统计增量验收
+
+- 默认运行总览：配置数与逻辑用例/显式算子分别显示；状态堆叠图、算子结果条形图、失败阶段、最慢配置和复测变化，沿用浅色青绿界面。统计基于实际记录，浏览器demo单独标注，无计时处留空。
+- 真实CPU pytest执行7算子34配置：26通过、5失败、1skip、1xfail、1xpass，覆盖setup/call/teardown。图表点击matmul失败和teardown失败均进入筛选详情；浏览器demo也验证单配置联动。
+- 仅复测5项失败：持续失败5，父记录未覆盖29，点击未覆盖过滤显示29条“本次未执行”；统计下载读回确认未覆盖29、恢复0，不把遗漏项算恢复。控制台warn/error为空。
+- 模型10项（新增4项边界统计）和静态打包4项通过，Python126项与ruff通过；前端/Python构建通过。
+- 桌面CSS1487×1058，截图run-statistics-desktop-final.png；首屏run-statistics-overview.png；复测run-statistics-rerun.png。手机CSS390×844、根scrollWidth375，截图run-statistics-mobile.png；导航的过渡捕获一度遮挡，复验完成后sidebarRight=0，已覆盖过渡截图。已实际查看这些图表与手机图，无新增P0/P1/P2。系统字体等已有P3不变，不宣称无障碍认证。
+- 真实板卡、热力图、Worker负载图和跨任意批次比较未包含在本轮。
+
+## 逐配置测试报告验收（2026-10-26）
+
+- 独立测试报告页与运行详情的“报告预览”均已通过实际浏览器操作验证；2文件、7逻辑用例、34配置按层级展开，结果单元格包含PASS/FAIL等有文字的色块。最新构建复验退出码1、父运行与真实毫秒时间。
+- 实际CPU pytest样例：26 PASS、5 FAIL、1 SKIP、1 XFAIL、1 XPASS；搜索4096、结果筛选、详情展开、全展开/折叠均有效。完整HTML下载读回确认34配置、两文件及毫秒时间。
+- 实际异常退出样例：仅最近已开始且尚无完整报告的配置标CRASH（1条），2 PASS和5 INCOMPLETE保持独立；未将未启动配置全部标崩溃。原始outcome不修改。
+- 桌面CSS1487×1058、手机390×844；根scrollWidth分别1472/375，表格内部水平滚动。已打开检查case-report-preview-final.png与case-report-mobile.png：文件/用例层级、参数、结果色块和表格对齐清楚，手机筛选和分组正常。另存case-report-preview-top.png和case-report-crash.png。控制台warn/error为空。
+- 模型14项、静态打包4项、前端构建及ruff通过；无新增依赖。已有大JS包构建提示保留。没有真实板卡验证或无障碍认证。
+
+## 报告紧凑布局与默认折叠
+
+- 文件/用例初始均折叠，切换运行重置；浏览器真实记录确认open=0。展开全部8组、折叠全部0组验证通过。
+- 收紧批次元信息、状态栏、分组间距及配置行；仅显示非零状态计数。修正窄屏用例名称强制全宽导致的堆叠，组名/数量/色块同行。
+- 实测桌面用例分组行34.6px、手机36.6px；390px屏根scrollWidth375。已查看case-report-compact-desktop.png和case-report-compact-mobile.png，折叠列表密度与展开配置的色块正常。
+- 前端模型14项、静态4项及构建通过。

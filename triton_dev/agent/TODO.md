@@ -29,3 +29,7 @@
 ## 测试与环境
 
 默认 tests 使用合成 SDK、受控客户端或真实本地子进程；真实 SDK/设备/模型结果必须另行记录。修改公开接口时同步更新本文件、STATUS.md、help 与 tests。
+
+## SDK 回归 Agent 设计（2026-10-26）
+
+方案见 [docs/REGRESSION_AGENT.md](../../docs/REGRESSION_AGENT.md)：冻结场景、二分边界审计、双向组件替换、v2决策协议与可重放证据报告。当前仅设计，未接通live provider或原生混合环境。
