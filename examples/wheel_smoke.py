@@ -5,6 +5,7 @@ from importlib.metadata import version
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 import triton_dev
@@ -48,7 +49,40 @@ def main():
         exported = root / 'evidence.zip'
         call(['runs', 'export', run['id'], '--output', str(exported)])
         assert call(['runs', 'verify-export', str(exported)])['valid']
-    print('Installed-wheel smoke passed: offline SDK save/prepare/verify, execution, pytest stages and evidence')
+        # Also exercise the installed server adapter, away from source checkout.
+        from triton_dev.serve.tasks import TaskManager
+        project = root / 'pytest-project'
+        project.mkdir()
+        (project / 'test_server.py').write_text('def test_server(): assert False, "INSTALLED_SERVER"\n')
+        manager = TaskManager(root / 'server-tasks', {'suite': {
+            'kind': 'pytest', 'argv': ['test_server.py'], 'cwd': str(project),
+            'python': args.test_python}})
+        def wait(record):
+            deadline = time.monotonic() + 15
+            while time.monotonic() < deadline:
+                record = manager.read(record['id'])
+                if record['state'] not in {'queued', 'running'}:
+                    return record
+                time.sleep(.03)
+            raise AssertionError('Installed server task timed out')
+        try:
+            collected = wait(manager.submit('suite', 'collect'))
+            assert collected['state'] == 'passed', collected
+            assert collected['collection'][0]['nodeid'] == 'test_server.py::test_server'
+            tested = wait(manager.run_pytest(collected['id'], ['test_server.py::test_server'], 'case', 'run'))
+            assert tested['summary']['failed'] == 1, tested
+            retried = wait(manager.rerun(tested['id'], 'failed', 'retry'))
+            assert retried['parent'] == tested['id'] and retried['summary']['failed'] == 1
+            parallel = wait(manager.run_pytest(
+                collected['id'], ['test_server.py::test_server'], 'xdist', 'parallel',
+                workers=2, extensions={'durations': 2}))
+            assert parallel['summary']['failed'] == 1, parallel
+            workers = {w['worker_id']: w for w in parallel['worker_reports']}
+            assert all(workers[name]['pids'] for name in ('gw0', 'gw1')), workers
+        finally:
+            manager.close()
+
+    print('Installed-wheel smoke passed: offline SDK save/prepare/verify, execution, pytest stages/evidence and server collection/run/rerun')
 
 
 if __name__ == '__main__':

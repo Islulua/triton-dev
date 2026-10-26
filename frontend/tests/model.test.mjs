@@ -29,3 +29,17 @@ test('local API tasks do not invent kernel stages or test results', () => {
   assert.equal(task.source, 'api'); assert.deepEqual(task.caseIds, []); assert.deepEqual(task.failedIds, []);
   assert.equal(task.record.result.returncode, 7);
 });
+
+test('32 configurations group by function while selecting exactly one nodeid', async () => {
+  const { groupCases, selectConfigurations } = await import('../src/pytest-model.js');
+  const items = Array.from({ length: 32 }, (_, n) => ({ nodeid: `test_matrix.py::test_shape[${n}]`, logical_nodeid: 'test_matrix.py::test_shape', parameters: { n }, markers: ['parametrize'] }));
+  const groups = groupCases(items);
+  assert.equal(groups.length, 1); assert.equal(groups[0].cases.length, 32);
+  let selected = selectConfigurations([], [items[17].nodeid], true);
+  assert.deepEqual(selected, ['test_matrix.py::test_shape[17]']);
+  selected = selectConfigurations(selected, items.slice(0, 2).map(c => c.nodeid), true);
+  assert.equal(selected.length, 3);
+  assert.deepEqual(selectConfigurations(selected, items.slice(0, 2).map(c => c.nodeid), false), ['test_matrix.py::test_shape[17]']);
+  const legacy = groupCases([{ nodeid: 'test_file.py::ClassA::test_shape[x]', case_id: 'same' }, { nodeid: 'test_file.py::ClassB::test_shape[x]', case_id: 'same' }]);
+  assert.equal(legacy.length, 2);
+});

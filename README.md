@@ -36,7 +36,7 @@ triton-dev describe env.prepare --json
 
 ## 网页前端
 
-浅色/青绿工作台位于 frontend/，支持组合创建、版本比较、用例运行和诊断的完整演示。真实 API 已接入登记任务提交/取消与状态更新，其他模块仍明确标为演示。开发预览及 `serve --ui` 使用方式见 [前端说明](frontend/README.md)。
+浅色/青绿工作台位于 frontend/，支持组合创建、版本比较、用例运行和诊断的完整演示。真实 API 已接入登记任务和 pytest 项目的收集、隔离运行、阶段结果与失败项复测；环境组合与诊断仍明确标为演示。开发预览及 `serve --ui` 使用方式见 [前端说明](frontend/README.md)。
 
 ## 使用
 
@@ -114,5 +114,14 @@ triton-dev doctor --json
 - [开发与 CI 规则](CONTRIBUTING.md)
 - [AI/代码协作规则](AGENTS.md)
 - [当前进度](STATUS.md)
+- [pytest 服务、隔离与复测](docs/PYTEST_SERVER.md)
+- [单服务器多人平台目标架构](docs/MULTI_USER_SERVER.md)
 
 原有 env exec 默认不生成报告；新增 runs、agent workflow 和 Server tasks 显式写入本地运行记录。可分享报告由显式导出命令或 `--output` 产生，准备状态与锁集中在工具缓存。没有必需的第三方服务或数据库。
+
+## 参数配置与 xdist 增量（未提交）
+
+- 已实现：逻辑用例分组与参数实例单选/多选；单次运行 xdist workers、每 worker 日志/进度/PID/独立缓存；失败复测保留 workers 与扩展选项。
+- 扩展接口：服务登记 schema/default/version/固定编译函数，项目 allowlist；内置失败阈值、慢阶段统计和输出捕获。HTTP 不接受自由命令。
+- xdist 同次运行共享源码工作目录，设备尚无租约；默认逐 case 模式保留。远程多用户身份及任意 fixture 参数覆盖仍待实现。
+- 验证：Python 105 passed、ruff通过；前端模型5项和静态打包4项通过。详细使用及边界见 docs/PYTEST_SERVER.md。

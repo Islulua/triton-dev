@@ -69,12 +69,25 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 return
             try:
                 parts = path.path.strip('/').split('/')
-                if parts == ['api', 'jobs']:
-                    value = [{'job_id': name} for name in manager.jobs]
+                if parts == ['api', 'pytest', 'extensions']:
+                    from triton_dev.execution.options import describe_extensions
+                    value = {'schema_version': 1, 'extensions': describe_extensions()}
+                elif parts == ['api', 'jobs']:
+                    from triton_dev.execution.options import describe_extensions
+                    value = [{'job_id': name, 'kind': job.get('kind', 'command'),
+                              'isolation': job.get('isolation', 'case') if job.get('kind') == 'pytest' else None,
+                              'max_workers': job.get('max_workers', 8) if job.get('kind') == 'pytest' else 1,
+                              'extensions': describe_extensions(job.get('allowed_extensions')) if job.get('kind') == 'pytest' else []}
+                             for name, job in manager.jobs.items()]
                 elif parts == ['api', 'tasks']:
-                    value = manager.store.list()
+                    value = manager.list()
                 elif len(parts) == 3 and parts[:2] == ['api', 'tasks']:
-                    value = manager.store.read(parts[2])
+                    value = manager.read(parts[2])
+                elif len(parts) == 5 and parts[:2] == ['api', 'tasks'] and parts[3] == 'artifacts':
+                    from .pytest_jobs import artifact
+                    self.reply(200, artifact(manager.store, parts[2], parts[4]),
+                               content_type='application/octet-stream')
+                    return
                 elif len(parts) == 4 and parts[:2] == ['api', 'tasks'] and parts[3] == 'events':
                     after = int(self.headers.get('Last-Event-ID') or parse_qs(path.query).get('after', ['0'])[0])
                     events = manager.store.events(parts[2], after)
@@ -107,6 +120,13 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 parts = urlsplit(self.path).path.strip('/').split('/')
                 if parts == ['api', 'tasks'] and set(data) == {'job_id', 'idempotency_key'}:
                     value = manager.submit(data['job_id'], data['idempotency_key'])
+                elif (parts == ['api', 'pytest', 'runs']
+                      and {'collection_id', 'nodeids', 'isolation', 'idempotency_key'} <= set(data)
+                      and set(data) <= {'collection_id', 'nodeids', 'isolation', 'idempotency_key', 'workers', 'extensions'}):
+                    value = manager.run_pytest(**data)
+                elif (len(parts) == 4 and parts[:2] == ['api', 'tasks'] and parts[3] == 'rerun'
+                      and set(data) == {'mode', 'idempotency_key'}):
+                    value = manager.rerun(parts[2], **data)
                 elif len(parts) == 4 and parts[:2] == ['api', 'tasks'] and parts[3] == 'cancel' and data == {}:
                     value = manager.cancel(parts[2])
                 else:

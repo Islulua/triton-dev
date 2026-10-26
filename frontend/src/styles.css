@@ -16,3 +16,6 @@
 @media(max-width:1250px){.environment-table .sdk-cell{font-size:12px}.environment-table .row-name{font-size:14px}}
 .table-scroll{position:relative}
 @media(max-width:740px){.has-drawer .drawer{width:min(436px,100%)}.section-toolbar{flex-wrap:wrap;gap:8px}.section-toolbar>.tabs{order:1;flex:1 0 100%}.section-toolbar>.toolbar-actions{margin-left:auto}.section-toolbar>.button{margin-left:auto}}
+
+/* Match the selected drawer's type scale while keeping the full form in view. */
+.drawer input,.drawer select{font-size:16px}.drawer .field-label{font-size:16px}.drawer .field-hint{font-size:14px}.drawer .locked-input{font-size:16px}.drawer-intro{font-size:14px}.drawer-intro .status{font-size:14px}.drawer .field{gap:8px;margin-bottom:20px}.native-section{margin-top:18px;padding-top:20px}

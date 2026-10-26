@@ -14,10 +14,10 @@ TERMINAL = {'passed', 'failed', 'timeout', 'cancelled', 'interrupted', 'error'}
 
 class RunStore:
     def __init__(self, root):
-        self.root = Path(root)
+        self.root = Path(root).resolve()
 
     def directory(self, run_id):
-        if not re.fullmatch(r'run_[a-f0-9]{32}', run_id):
+        if not isinstance(run_id, str) or not re.fullmatch(r'run_[a-f0-9]{32}', run_id):
             raise ToolError('INVALID_RUN_ID', str(run_id))
         path = self.root / run_id
         if not path.is_dir():
@@ -73,15 +73,29 @@ class RunStore:
         return recovered
 
 
-def _execute_record(store, run_id, *, cancel=None, log_limit=8 * 1024 * 1024):
-    record = store.read(run_id)
-    request = record['request']
-    path = store.directory(run_id)
+def request_environment(request):
     env = os.environ.copy()
     environment = request.get('environment')
     if environment:
         from triton_dev.env.service import process_environment, variables
         env = process_environment(variables(environment))
+    if request.get('private_environment') or request.get('kind') == 'pytest':
+        from triton_dev.env.settings import MANAGED
+        allowed = set(MANAGED) | {'PATH', 'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ', 'SYSTEMROOT',
+                                  'CUDA_VISIBLE_DEVICES', 'ROCR_VISIBLE_DEVICES', 'DYLD_LIBRARY_PATH'}
+        env = {k: v for k, v in env.items() if k in allowed}
+        env.pop('PYTHONHOME', None)
+        env.pop('PYTHONPATH', None)
+        env['PYTHONNOUSERSITE'] = '1'
+    return env
+
+
+def _execute_record(store, run_id, *, cancel=None, log_limit=8 * 1024 * 1024):
+    record = store.read(run_id)
+    request = record['request']
+    path = store.directory(run_id)
+    env = request_environment(request)
+    environment = request.get('environment')
     python = environment['interpreter'] if environment else request.get('python', sys.executable)
     argv = request['argv']
     if not isinstance(argv, list) or not argv or any(not isinstance(a, str) for a in argv):
@@ -89,8 +103,20 @@ def _execute_record(store, run_id, *, cancel=None, log_limit=8 * 1024 * 1024):
     if request.get('pytest'):
         if any(a.startswith('-') for a in argv):
             raise ToolError('INVALID_ARGUMENT', 'Recorded pytest accepts targets only; project config supplies options')
+        from triton_dev.execution.options import compile_extensions
+        extension_args = compile_extensions(request.get('extensions', {}), request.get('extension_versions')) if not request.get('collect_only') else []
+        distributed = request.get('isolation') == 'xdist' and not request.get('collect_only')
         argv = [python, '-m', 'pytest', '-p', 'triton_dev.pytest_plugin',
-                '--triton-dev-events', str(path / 'pytest-events.jsonl'), *argv]
+                '--triton-dev-events', str(path / 'pytest-events.jsonl'),
+                *[value for plugin in request.get('plugins', []) if not (distributed and plugin in {'xdist', 'xdist.plugin'}) for value in ('-p', plugin)],
+                *(['-p', 'xdist.plugin', '-n', str(request.get('workers', 1)), '--dist', 'load',
+                   '--max-worker-restart', '0'] if distributed else []),
+                *(['-n', '0', '--dist', 'no'] if not distributed and any(p in {'xdist', 'xdist.plugin'} for p in request.get('plugins', [])) else []),
+                *extension_args,
+                *(['--collect-only', '--triton-dev-collection-output', str(path / 'collection.json')]
+                  if request.get('collect_only') else []),
+                *(['--rootdir', str(Path(request['cwd']).resolve()), '-o', 'cache_dir=' + str(path / 'pytest-cache'), '--basetemp',
+                   str(path / 'pytest-tmp')] if request.get('private_environment') else []), *argv]
         # Explicit adapter import; never installs packages into the SDK.
         env['PYTHONPATH'] = str(Path(__file__).resolve().parents[2])
     elif argv[0] in ('python', 'python3'):
@@ -98,6 +124,14 @@ def _execute_record(store, run_id, *, cancel=None, log_limit=8 * 1024 * 1024):
     for key in ('cache', 'tmp'):
         (path / key).mkdir(exist_ok=True)
     env.update({'TRITON_CACHE_DIR': str(path / 'cache'), 'TMPDIR': str(path / 'tmp')})
+    if request.get('private_environment'):
+        for folder in ('home', 'xdg-cache', 'cuda-cache', 'artifacts'):
+            (path / folder).mkdir(exist_ok=True)
+        env.update({'HOME': str(path / 'home'), 'XDG_CACHE_HOME': str(path / 'xdg-cache'),
+                    'CUDA_CACHE_PATH': str(path / 'cuda-cache'), 'TMP': str(path / 'tmp'),
+                    'TEMP': str(path / 'tmp'), 'PYTHONNOUSERSITE': '1',
+                    'PYTEST_DISABLE_PLUGIN_AUTOLOAD': '1', 'PYTEST_ADDOPTS': '',
+                    'TRITON_DEV_ARTIFACTS': str(path / 'artifacts')})
     store.update(run_id, state='running', started_at=time.time())
     store.event(run_id, 'running')
     written = {'stdout': 0, 'stderr': 0}

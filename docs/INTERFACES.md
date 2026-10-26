@@ -55,3 +55,21 @@ python -m pytest tests/smoke
 SDK_NOT_FOUND、SDK_INCOMPLETE、INVALID_DATE、WHEEL_SELECTION_FAILED、ENV_NOT_PREPARED、INCOMPLETE_ENVIRONMENT、INSTALL_FAILED、SOURCE_CHANGED、REMOTE_LIST_UNSUPPORTED、CHECKSUM_MISMATCH、UNSAFE_ARCHIVE、UNSUPPORTED、NEEDS_INPUT、TIMEOUT、COLLECTION_FAILED、MODEL_PROTOCOL_ERROR、UNKNOWN_EVIDENCE、ACTION_NOT_ALLOWED、FINISH_REJECTED。
 
 完整错误枚举/版本协商和生成式接口参考文档是后续任务；当前协议由代码和测试共同看护。
+
+## pytest 服务 HTTP 接口
+
+所有任务接口沿用 Bearer、Host/Origin 校验。完整配置见 [pytest 服务](PYTEST_SERVER.md)。
+
+| 方法 / 路径 | 请求 / 响应 |
+| --- | --- |
+| GET /api/jobs | 返回 job_id、kind、默认隔离、max_workers、扩展 schema；kind=pytest 支持以下流程 |
+| POST /api/tasks | {job_id,idempotency_key}；pytest 项目创建异步 collection，普通任务照常执行 |
+| GET /api/tasks / GET /api/tasks/:id | 返回真实阶段、汇总、收集结果、快照、附件和复测对照 |
+| GET /api/pytest/extensions | 服务器登记的扩展 schema/default/version |
+| POST /api/pytest/runs | 必需 {collection_id,nodeids,isolation,idempotency_key}，可选 workers（默认1）、extensions；isolation=case/session/xdist，只允许成功收集中的唯一 nodeid |
+| POST /api/tasks/:id/rerun | {mode:failed或all,idempotency_key}；新记录保留 parent |
+| POST /api/tasks/:id/cancel | {}；取消运行及其当前 case 进程组 |
+| GET /api/tasks/:id/artifacts/:artifact_id | 鉴权后下载显式附件，10 MiB 上限、无自由路径 |
+| GET /api/tasks/:id/events?after=N | 有限批次 SSE 状态事件；阶段数据通过任务详情刷新 |
+
+幂等键必须对应相同 job、选择、隔离与 parent，workers 和规范化扩展配置也参与比较；变更请求复用键返回 IDEMPOTENCY_CONFLICT。collection/run 数据 schema_version 仍为1，字段为向后兼容新增。

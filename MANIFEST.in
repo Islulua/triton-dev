@@ -5,3 +5,12 @@ recursive-include triton_dev *.py TODO.md
 
 recursive-include examples *.py
 recursive-include skills *.md
+
+include frontend/AGENTS.md frontend/README.md frontend/TODO.md frontend/design-qa.md
+include frontend/package.json frontend/package-lock.json frontend/index.html frontend/vite.config.js frontend/.npmrc
+recursive-include frontend/src *.js *.jsx *.css
+recursive-include frontend/public *.png
+recursive-include frontend/scripts *.mjs
+recursive-include frontend/tests *.mjs
+recursive-include frontend/worker *.js
+include frontend/.openai/hosting.json

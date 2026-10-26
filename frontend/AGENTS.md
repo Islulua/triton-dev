@@ -7,3 +7,11 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 When implementing from a selected generated mock, treat that image as the source of truth for layout, component anatomy, density, spacing, color, typography, visible content, and hierarchy.
 
 Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs`, and `tests/sites-worker.test.mjs` intact so the same local prototype can be handed to Sites. Before a Sites handoff, run `npm run build` and `npm run test:sites`; the build must leave `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
+
+## Selected direction
+
+The user selected the first generated design: light surfaces, teal accents, fixed left navigation, a dense environment table, and a right-hand task drawer. Keep this visual hierarchy and clearly label browser demo data.
+
+## Case execution preferences
+
+Group collected configurations beneath their logical test function. Let users select individual parameterized nodeids. Expose pytest-xdist workers and per-worker logs; render additional run settings from server-owned extension schemas. Preserve the existing light/teal hierarchy.

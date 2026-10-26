@@ -138,10 +138,10 @@ def parser_factory():
     p = leaf(sub, "report", "report", "Summarize a previously exported comparison without rerunning it")
     p.add_argument("input", type=Path)
     leaf(sub, "doctor", "doctor", "Read-only platform, SDK, cache and shell preflight")
-    p = leaf(sub, "serve", "serve", "Loopback capabilities and optional registered-job task API", effects="listen_loopback")
+    p = leaf(sub, "serve", "serve", "Loopback task API with registered pytest collection, isolation and reruns", effects="listen_loopback")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--ui", type=Path, help="Built frontend dist/client directory, served on the same local origin")
-    p.add_argument("--jobs", type=Path, help="Trusted local JSON job registry; enables task API")
+    p.add_argument("--jobs", type=Path, help="Trusted local JSON registry; command or kind=pytest projects")
     p.add_argument("--token-env", default="TRITON_DEV_SERVER_TOKEN", help="Token variable required when --jobs is set")
     from .offline import register
     register(sub, esub, cs, ds, ag, leaf, selection)
