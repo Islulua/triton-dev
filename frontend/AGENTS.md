@@ -31,3 +31,13 @@ Batch run results should default to an overview with outcome counts, per-operato
 Provide a dedicated report preview grouped by file, class/function and parameter configuration. Render uppercase result labels such as PASS/FAIL/CRASH as coloured blocks inside table cells, include observed timing/worker/evidence, and keep missing data explicit. CRASH needs attributable process-exit evidence; never label all unexecuted configurations as crashes.
 
 测试报告采用紧凑分组列表，默认折叠全部文件和用例；组名、配置数和结果计数尽量同行，减少留白。展开后保留参数与结果色块；切换运行重置展开状态。
+
+回归定位提供独立网页入口，保持浅色青绿和紧凑表格；可查看版本搜索、组件干预、模型决策及报告，始终显著标记mock范围。
+
+Agent采用左侧可展开任务分组，回归定位作为子模块；其他子模块在接通前明确标记待接入。回归页面遵循2026-10-27选定预览图：结论优先、五步进度、版本搜索、组件双向对照，默认折叠新建配置与原始日志，保留复制摘要/完整复现命令和报告/证据包下载。
+
+2026-10-27 未连接回归演示：默认展示浏览器预设完整样例，可自动播放/暂停、上一步/下一步及跳转阶段；无需token或服务API。演示数据/日志/报告明确标注未执行pytest、未调用模型，禁用实际复现命令，连接服务才运行真实CPU实验。
+
+## 简约 UI 规范（2026-10-27）
+
+各模块遵循 docs/UI_DESIGN.md，公共 token 与组件规则位于 src/refine.css。优先显示结果与主要操作；删除重复说明、全局页脚和重复用户信息。原始日志、快照、完整ID、统计定义默认折叠，必要来源/错误/未知状态不能省略。表格紧凑、对齐统一，报告结果维持带文字色块。Profiling 默认报告优先，新建采样收起；未发现回归时不展示未执行的搜索、空组件矩阵或无效复现操作。

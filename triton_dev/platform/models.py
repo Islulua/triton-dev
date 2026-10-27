@@ -1,0 +1,249 @@
+"""Relational ownership, execution/query indexes, queues and immutable configuration revisions."""
+
+from sqlalchemy import (
+    MetaData,
+    Table,
+    Column,
+    String,
+    Text,
+    Integer,
+    Float,
+    Boolean,
+    JSON,
+    ForeignKey,
+    ForeignKeyConstraint,
+    UniqueConstraint,
+    Index,
+)
+
+metadata = MetaData(
+    naming_convention={
+        "ix": "ix_%(table_name)s_%(column_0_name)s",
+        "uq": "uq_%(table_name)s_%(column_0_N_name)s",
+        "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+        "pk": "pk_%(table_name)s",
+    }
+)
+users = Table(
+    "users",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("name", String(64), nullable=False),
+    Column("canonical_name", String(128), nullable=False, unique=True),
+    Column("created_at", Float, nullable=False),
+)
+workspaces = Table(
+    "workspaces",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("kind", String(24), nullable=False),
+    Column("user_id", String(64), ForeignKey("users.id"), unique=True),
+)
+sessions = Table(
+    "sessions",
+    metadata,
+    Column("token_hash", String(64), primary_key=True),
+    Column("user_id", String(64), ForeignKey("users.id"), nullable=False),
+    Column("csrf_hash", String(64), nullable=False),
+    Column("expires_at", Float, nullable=False),
+    Column("revoked", Boolean, nullable=False, default=False),
+)
+tasks = Table(
+    "tasks",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), ForeignKey("workspaces.id"), nullable=False),
+    Column("kind", String(24), nullable=False),
+    Column("state", String(32), nullable=False),
+    Column("phase", String(48)),
+    Column("created_at", Float, nullable=False),
+    Column("updated_at", Float, nullable=False),
+    Column("job_id", String(128)),
+    Column("idempotency_key", String(128)),
+    Column("request_digest", String(64)),
+    Column("parent_id", String(64)),
+    Column("payload", JSON, nullable=False),
+    Column("queue_state", String(32), nullable=False, default="none"),
+    Column("worker_id", String(128)),
+    Column("worker_pid", Integer),
+    Column("worker_host", String(128)),
+    Column("lease_until", Float),
+    Column("generation", Integer, nullable=False, default=0),
+    Column("cancel_requested", Boolean, nullable=False, default=False),
+    Column("profile_revision_id", String(64)),
+    UniqueConstraint("workspace_id", "id"),
+    UniqueConstraint("workspace_id", "kind", "idempotency_key"),
+    ForeignKeyConstraint(["workspace_id", "parent_id"], ["tasks.workspace_id", "tasks.id"]),
+    Index("ix_task_workspace_date", "workspace_id", "created_at", "id"),
+    Index("ix_task_queue", "queue_state", "created_at"),
+)
+events = Table(
+    "task_events",
+    metadata,
+    Column("task_id", String(64), ForeignKey("tasks.id"), primary_key=True),
+    Column("seq", Integer, primary_key=True),
+    Column("kind", String(48)),
+    Column("created_at", Float),
+    Column("payload", JSON),
+)
+experiments = Table(
+    "experiments",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("task_id", String(64)),
+    Column("workspace_id", String(64), nullable=False),
+    Column("label", String(256)),
+    Column("classification", String(32)),
+    Column("payload", JSON),
+    ForeignKeyConstraint(["workspace_id", "task_id"], ["tasks.workspace_id", "tasks.id"]),
+    Index("ix_experiment_owner_task", "workspace_id", "task_id"),
+)
+case_results = Table(
+    "case_results",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), nullable=False),
+    Column("task_id", String(64)),
+    Column("nodeid", Text, nullable=False),
+    Column("case_key", String(64), nullable=False),
+    Column("outcome", String(32)),
+    Column("duration", Float),
+    Column("failure_phase", String(32)),
+    Column("failure_fingerprint", String(64)),
+    Column("finished_at", Float),
+    Column("payload", JSON),
+    ForeignKeyConstraint(["workspace_id", "task_id"], ["tasks.workspace_id", "tasks.id"]),
+    Index("ix_case_owner_key_date", "workspace_id", "case_key", "finished_at"),
+    Index("ix_case_owner_outcome", "workspace_id", "outcome"),
+)
+blobs = Table(
+    "blobs",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), ForeignKey("workspaces.id"), nullable=False),
+    Column("task_id", String(64)),
+    Column("sha256", String(64), nullable=False),
+    Column("size", Integer, nullable=False),
+    Column("storage_key", Text, nullable=False),
+    Column("name", String(256)),
+    Column("created_at", Float),
+)
+profiles = Table(
+    "ai_profiles",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), ForeignKey("workspaces.id"), nullable=False),
+    Column("name", String(100), nullable=False),
+    Column("enabled", Boolean, nullable=False),
+    Column("is_default", Boolean, nullable=False),
+    Column("current_revision", String(64)),
+    UniqueConstraint("workspace_id", "name"),
+    UniqueConstraint("workspace_id", "id"),
+)
+secrets = Table(
+    "secret_versions",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), ForeignKey("workspaces.id"), nullable=False),
+    Column("ciphertext", Text, nullable=False),
+    Column("key_id", String(32), nullable=False),
+    Column("created_at", Float, nullable=False),
+    UniqueConstraint("workspace_id", "id"),
+)
+profile_revisions = Table(
+    "ai_profile_revisions",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), nullable=False),
+    Column("profile_id", String(64)),
+    Column("config", JSON, nullable=False),
+    Column("secret_id", String(64)),
+    Column("created_at", Float),
+    UniqueConstraint("workspace_id", "id"),
+    ForeignKeyConstraint(
+        ["workspace_id", "profile_id"], ["ai_profiles.workspace_id", "ai_profiles.id"]
+    ),
+    ForeignKeyConstraint(
+        ["workspace_id", "secret_id"], ["secret_versions.workspace_id", "secret_versions.id"]
+    ),
+)
+ai_calls = Table(
+    "ai_calls",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), ForeignKey("workspaces.id"), nullable=False),
+    Column("task_id", String(64)),
+    Column("profile_revision_id", String(64)),
+    Column("state", String(32)),
+    Column("tokens", Integer),
+    Column("cost", Float),
+    Column("created_at", Float),
+    Column("payload", JSON),
+)
+daily_definitions = Table(
+    "daily_definitions",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("name", String(128), unique=True),
+    Column("config", JSON),
+    Column("enabled", Boolean),
+)
+sdk_builds = Table(
+    "sdk_builds",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("source", String(128)),
+    Column("channel", String(64)),
+    Column("platform", String(64)),
+    Column("build_date", String(10)),
+    Column("build_id", String(128)),
+    Column("manifest_digest", String(64)),
+    Column("state", String(32)),
+    Column("manifest", JSON),
+    UniqueConstraint("source", "channel", "platform", "build_id", "manifest_digest"),
+    Index("ix_sdk_date", "source", "channel", "platform", "build_date"),
+)
+daily_batches = Table(
+    "daily_batches",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("definition_id", String(64), ForeignKey("daily_definitions.id")),
+    Column("business_date", String(10)),
+    Column("build_id", String(64), ForeignKey("sdk_builds.id")),
+    Column("task_id", String(64), ForeignKey("tasks.id")),
+    Column("state", String(32)),
+    Column("summary", JSON),
+    UniqueConstraint("definition_id", "business_date", "build_id"),
+)
+aliases = Table(
+    "environment_aliases",
+    metadata,
+    Column("name", String(128), primary_key=True),
+    Column("build_id", String(64), ForeignKey("sdk_builds.id")),
+    Column("updated_at", Float),
+)
+audit = Table(
+    "audit_events",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), ForeignKey("workspaces.id")),
+    Column("action", String(64)),
+    Column("object_id", String(64)),
+    Column("created_at", Float),
+    Column("payload", JSON),
+)
+
+stage_results = Table(
+    "case_stage_results",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("workspace_id", String(64), nullable=False),
+    Column("task_id", String(64)),
+    Column("nodeid", Text, nullable=False),
+    Column("phase", String(32)),
+    Column("outcome", String(32)),
+    Column("duration", Float),
+    Column("worker_id", String(64)),
+    ForeignKeyConstraint(["workspace_id", "task_id"], ["tasks.workspace_id", "tasks.id"]),
+    Index("ix_stage_owner_phase", "workspace_id", "phase", "outcome"),
+)

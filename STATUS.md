@@ -99,3 +99,33 @@ Profiling验证：完整122项Python测试（新增17项）、ruff、前端5+4�
 测试报告采用紧凑分组列表，默认折叠全部文件和用例；组名、配置数和结果计数尽量同行，减少留白。展开后保留参数与结果色块；切换运行重置展开状态。
 
 2026-10-26 交付整理：本轮Profiling demo、时间线导航、运行统计、逐配置报告及紧凑布局纳入本次提交；上文“未提交”为各增量开发时记录。板卡测量仍为mock，回归agent新增内容为设计文档。
+
+2026-10-26 regression首版契约：见docs/REGRESSION_V1.md。明确baseline→update→latest顺序、earliest_verified与边界模式、合法组件闭包双向干预、配置化模型及提单重放输出；本次仅设计文档，尚未实现/调用模型。
+
+## Regression首版实现（未提交）
+
+已增加agent regression持久任务、真实CPU pytest实验、mock清单/update/组件/模型、二分与严格首次补扫、双向组件/组干预、预算/取消/恢复和JSON/MD/HTML/重放报告。CLI、鉴权后台HTTP和/#regression网页共用业务服务。真实SDK/任意case/模型API及原生包与板卡仍未接通。使用与边界见docs/REGRESSION_USAGE.md。
+
+Regression验收：Python148项、前端模型14+静态4项、ruff及前端/Python构建通过；仓库外安装wheel后catalog与真实baseline/latest pytest smoke通过。网页验证单组件15日边界、非单调13日首次失败、日志/矩阵/报告，下载证据包校验及独立重放通过。当前修改未提交。
+
+2026-10-27 Agent导航与回归UI：左侧可展开Agent分组，回归定位子模块；按选定预览图重排结论、进度、日期搜索与组件矩阵。新建配置/日志默认折叠，摘要和完整命令可复制，报告/证据包可下载。实验工作流与模型配置仅预留，未新增后台能力。前端16模型测试+4静态测试与构建通过；改动未提交。
+
+2026-10-27 未连接回归演示：默认展示浏览器预设完整样例，可自动播放/暂停、上一步/下一步及跳转阶段；无需token或服务API。演示数据/日志/报告明确标注未执行pytest、未调用模型，禁用实际复现命令，连接服务才运行真实CPU实验。
+
+2026-10-27 多用户与数据库设计：详见docs/DATA_PLATFORM.md。姓名会话/个人workspace、个人模型profile与加密密钥、PostgreSQL事实源/证据BlobStore、统一任务/结果/daily模型、查询索引、DB租约与旧数据迁移；当前仅方案，尚未实现。
+
+## 多用户数据库平台首版（2026-10-27，未提交）
+
+已实现姓名 Cookie 会话与个人 workspace、PostgreSQL/SQLite + Alembic、统一任务/pytest阶段与配置结果/回归实验/证据索引、DB租约队列与保守恢复、个人模型revision与加密只写Key、公共SDK元数据/daily批次、legacy未分配导入；网页接入姓名登录、模型配置、数据中心与切换用户清理。管理CLI不启动worker。实际操作与边界见 docs/PLATFORM_USAGE.md。
+
+已通过完整162项Python测试（含真实PostgreSQL与SQLite）、ruff，前端19项模型/会话测试与4项静态测试、构建。真实模型请求/usage结算、SDK Builder/latest门禁、SSO/RLS、容器与设备租约尚未实现；姓名仅用于可信内网协作归属。当前预览使用本机独立PostgreSQL集群，旧任务保存在legacy空间，未提交或推送。
+
+## UI简约化（2026-10-27，未提交）
+
+按现有浅色青绿方向统一各模块公共颜色/字号/间距/紧凑表格，精简顶栏、重复说明和固定页脚；Profiling报告优先、配置折叠，报告元信息/统计口径折叠，账号清单与模型/数据查询布局收敛。回归最新通过时跳过未执行的搜索/组件面板和无效复现；补充hash路由同步。设计规范见docs/UI_DESIGN.md，逐模块浏览器验收见docs/UI_REFINEMENT_QA.md。真实CPU 34配置/4 xdist workers及14实验组件回归验证正常，390px报告无根横向溢出，时间线固定列和W键缩放保留。无后端或数据库改动。
+
+UI验证：前端20项模型/会话测试、4项静态测试与生产构建通过。独立验收空间完成实际运行/回归、报告展开、个人配置保存与窄屏检查，console error为空；原服务继续使用现有PostgreSQL与用户数据。改动未提交。
+
+## 2026-10-27 提交整理
+
+本次提交纳入回归Agent、多用户数据库平台与UI简约化的全部源码、测试、文档和预览图；上文“未提交”保留为各开发阶段记录。提交前完整Python162项（含真实PostgreSQL/SQLite）、ruff、前端20项模型/会话测试+4项静态测试、前端与Python构建、仓库外安装wheel smoke均通过。真实模型/板卡与SDK Builder等边界不变。仅本地提交，不推送远程。

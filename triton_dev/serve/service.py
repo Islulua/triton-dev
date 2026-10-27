@@ -71,7 +71,27 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 return
             try:
                 parts = path.path.strip('/').split('/')
-                if parts == ['api', 'profiling', 'catalog']:
+                if parts == ['api', 'regression', 'catalog']:
+                    from triton_dev.agent.regression.service import catalog as regression_catalog
+                    value = regression_catalog()
+                elif parts == ['api', 'regression', 'tasks']:
+                    value = manager.regressions.list()
+                elif len(parts) in (4, 5, 6) and parts[:3] == ['api', 'regression', 'tasks']:
+                    value = manager.regressions.read(parts[3])
+                    if len(parts) == 5 and parts[4] == 'bundle':
+                        from triton_dev.agent.regression.reporting import bundle
+                        self.reply(200, bundle(manager.regressions._dir(parts[3]), value), content_type='application/gzip')
+                        return
+                    if len(parts) == 5 and parts[4] == 'report':
+                        root = manager.regressions._dir(parts[3])
+                        if not (root / 'report.md').exists():
+                            raise ToolError('NOT_READY', 'Report is not ready')
+                        value = {'markdown': (root / 'report.md').read_text(), 'html': (root / 'report.html').read_text(), 'record': value}
+                    elif len(parts) == 6 and parts[4] == 'experiments':
+                        value = manager.regressions.experiment(parts[3], parts[5])
+                    elif len(parts) != 4:
+                        raise ToolError('NOT_FOUND', 'Regression endpoint not found')
+                elif parts == ['api', 'profiling', 'catalog']:
                     value = catalog()
                 elif parts == ['api', 'profiling', 'reports']:
                     value = profiles.list()
@@ -131,7 +151,11 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 if not isinstance(data, dict):
                     raise ToolError('INVALID_ARGUMENT', 'JSON object required')
                 parts = urlsplit(self.path).path.strip('/').split('/')
-                if parts == ['api', 'profiling', 'reports']:
+                if parts == ['api', 'regression', 'tasks'] and set(data) == {'config', 'idempotency_key'}:
+                    value = manager.regressions.start(data['config'], idempotency_key=data['idempotency_key'])
+                elif len(parts) == 5 and parts[:3] == ['api', 'regression', 'tasks'] and parts[4] in {'cancel', 'resume'} and data == {}:
+                    value = getattr(manager.regressions, parts[4])(parts[3])
+                elif parts == ['api', 'profiling', 'reports']:
                     value = profiles.create(data)
                 elif parts == ['api', 'tasks'] and set(data) == {'job_id', 'idempotency_key'}:
                     value = manager.submit(data['job_id'], data['idempotency_key'])

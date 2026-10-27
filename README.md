@@ -134,3 +134,11 @@ triton-dev doctor --json
 网页运行详情新增[批次统计总览](docs/RUN_STATISTICS.md)，按配置去重展示结果/算子/阶段分布、慢配置和复测变化，支持图表联动筛选；operator元数据可显式标注。
 
 [测试报告预览](docs/TEST_REPORT.md)按文件、逻辑用例和配置展示结果色块、执行时间与证据，提供独立页面和离线HTML/JSON导出。
+
+回归定位工具首版已支持mock SDK/模型 + 真实CPU pytest的CLI与网页闭环，见[使用说明](docs/REGRESSION_USAGE.md)。真实SDK/板卡/模型API尚未接通。
+
+## 多用户数据库服务
+
+使用 `pip install -e '.[server]'` 与 `serve --multi-user` 启用姓名登录、个人空间、个人模型配置和数据库数据中心。正式共享模式使用 PostgreSQL；操作、管理 CLI 和当前边界见 [PLATFORM_USAGE.md](docs/PLATFORM_USAGE.md)。真实模型 API、SDK Builder 和设备隔离仍待接入。
+
+界面布局、模块设计原则与公共颜色 / 间距规范见 [UI_DESIGN.md](docs/UI_DESIGN.md)，浏览器验收与预览见 [UI_REFINEMENT_QA.md](docs/UI_REFINEMENT_QA.md)。

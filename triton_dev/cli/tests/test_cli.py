@@ -17,7 +17,8 @@ def test_capability_definitions_match_actual_parsers():
         actual = {a.dest for a in CATALOG[name]["parser"]._actions if a.dest != "help"}
         assert {x["name"] for x in description["arguments"]} == actual
         assert description["summary"]
-    assert describe("agent.regression")["status"] == "unsupported"
+    assert describe("agent.regression")["status"] == "implemented"
+    assert "mock" in describe("agent.regression")["summary"].lower()
 
 
 def test_cli_discovery_and_describe(make_sdk, capsys):

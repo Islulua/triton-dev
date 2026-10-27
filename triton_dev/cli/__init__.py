@@ -134,7 +134,12 @@ def parser_factory():
     p = leaf(ag, "scripted", "agent.scripted", "Exercise the AI protocol offline using explicit scripted responses", effects="read_only_cli")
     p.add_argument("responses", type=Path)
     p.add_argument("--max-turns", type=int, default=5)
-    p = leaf(ag, "regression", "agent.regression", "Live AI regression planner: integration TODO", status="unsupported")
+    p = leaf(ag, "regression", "agent.regression", "Persistent mock SDK regression with real CPU pytest; no live model", effects="execute_write_cache")
+    p.add_argument("operation", choices=["catalog", "start", "status", "resume", "cancel", "report", "replay"])
+    p.add_argument("task_id", nargs="?")
+    p.add_argument("--config", type=Path, help="Trusted regression JSON; only mock adapters currently enabled")
+    p.add_argument("--experiment", help="Recorded experiment ID to replay without a model")
+    p.add_argument("--format", choices=["json", "md", "html"], default="json")
     p = leaf(sub, "report", "report", "Summarize a previously exported comparison without rerunning it")
     p.add_argument("input", type=Path)
     leaf(sub, "doctor", "doctor", "Read-only platform, SDK, cache and shell preflight")
@@ -143,6 +148,18 @@ def parser_factory():
     p.add_argument("--ui", type=Path, help="Built frontend dist/client directory, served on the same local origin")
     p.add_argument("--jobs", type=Path, help="Trusted local JSON registry; command or kind=pytest projects")
     p.add_argument("--token-env", default="TRITON_DEV_SERVER_TOKEN", help="Token variable required when --jobs is set")
+    p.add_argument("--multi-user", action="store_true", help="ASGI name-only sessions and database-backed user workspaces")
+    p.add_argument("--database-url-env", default="TRITON_DEV_DATABASE_URL", help="Database URL environment variable (never printed)")
+    p.add_argument("--allowed-host", action="append", default=[], help="Allowed hostnames for the ASGI deployment")
+    p.add_argument("--model-endpoint", action="append", default=[], help="Administrator-registered model endpoint; live calls remain disabled")
+    p.add_argument("--secure-cookies", action="store_true", help="Use Secure session cookies behind HTTPS")
+    platform_parser=sub.add_parser("platform",help="Local administrator database/data maintenance")
+    platform_commands=platform_parser.add_subparsers(required=True)
+    p=leaf(platform_commands,"manage","platform.manage","Database migration, legacy import and system daily registration",effects="database_write")
+    p.add_argument("operation",choices=["migrate","import-legacy","import-build","daily-plan","daily-tick"])
+    p.add_argument("--input",type=Path)
+    p.add_argument("--database-url-env",default="TRITON_DEV_DATABASE_URL")
+    p.add_argument("--jobs",type=Path)
     from .offline import register
     register(sub, esub, cs, ds, ag, leaf, selection)
     return root
@@ -403,21 +420,101 @@ def dispatch(args):
         return run_controller(ScriptedModel(json.loads(args.responses.read_text())),
                               CliBridge(args.sdk_root, args.cache_root), max_turns=args.max_turns)
     if command == "agent.regression":
-        raise ToolError("UNSUPPORTED", "Live AI planner is TODO. Use diagnose compare or agent scripted for offline protocol validation")
+        from triton_dev.agent.regression.service import RegressionService, catalog
+        if args.operation == 'catalog':
+            return catalog()
+        service = RegressionService(args.cache_root / 'regressions')
+        try:
+            if args.operation == 'start':
+                return service.start(json.loads(args.config.read_text()) if args.config else {}, background=False)
+            if not args.task_id:
+                raise ToolError('INVALID_ARGUMENT', 'Task ID is required')
+            if args.operation == 'report':
+                service.read(args.task_id)
+                path = service._dir(args.task_id) / ('report.' + args.format)
+                if not path.exists():
+                    raise ToolError('NOT_READY', 'Report is not ready')
+                return json.loads(path.read_text()) if args.format == 'json' else {'content': path.read_text(), 'format': args.format}
+            if args.operation == 'replay':
+                return service.replay(args.task_id, args.experiment)
+            if args.operation == 'resume':
+                return service.resume(args.task_id, background=False)
+            return getattr(service, 'read' if args.operation == 'status' else 'cancel')(args.task_id)
+        finally:
+            service.close()
     if command == "report":
         from triton_dev.reporting.service import summarize
         data = json.loads(args.input.read_text())
         return summarize(data.get("data", data))
     if command == "doctor":
         from triton_dev.doctor.service import check
+
         return check(args.sdk_root, args.cache_root)
+    if command == "platform.manage":
+        from triton_dev.platform.service import Platform
+
+        url = os.environ.get(args.database_url_env)
+        if not url:
+            raise ToolError("DATABASE_REQUIRED", "Set the database URL environment variable")
+        platform = Platform(
+            url,
+            args.cache_root / "platform",
+            json.loads(args.jobs.read_text()) if args.jobs else {},
+            start_worker=False,
+        )
+        try:
+            if args.operation == "migrate":
+                return {"schema": "0002_stage_results", "database": platform.db.engine.dialect.name}
+            if args.operation == "import-legacy":
+                if not args.input:
+                    raise ToolError("INVALID_ARGUMENT", "--input directory required")
+                return platform.import_legacy(args.input)
+            if args.operation == "daily-tick":
+                return platform.daily.tick()
+            if not args.input:
+                raise ToolError("INVALID_ARGUMENT", "--input JSON required")
+            data = json.loads(args.input.read_text())
+            return (
+                platform.daily.import_build(data)
+                if args.operation == "import-build"
+                else platform.daily.definition(**data)
+            )
+        finally:
+            platform.close()
     if command == "serve":
+        if args.multi_user:
+            from triton_dev.platform.service import Platform
+            from triton_dev.platform.app import create_app
+            import uvicorn
+
+            url = os.environ.get(args.database_url_env)
+            if not url:
+                raise ToolError("DATABASE_REQUIRED", "Set the database URL environment variable")
+            platform = Platform(
+                url,
+                args.cache_root / "platform",
+                json.loads(args.jobs.read_text()) if args.jobs else {},
+                args.model_endpoint,
+            )
+            app = create_app(
+                platform,
+                capabilities(),
+                args.ui,
+                allowed_hosts=tuple({"127.0.0.1", "localhost", *args.allowed_host}),
+                secure_cookie=args.secure_cookies,
+            )
+            uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
+            return {"state": "stopped"}
         from triton_dev.serve.service import serve
+
         if args.jobs:
             from triton_dev.serve.tasks import TaskManager
+
             token = os.environ.get(args.token_env)
             if not token or len(token) < 16:
-                raise ToolError("INVALID_ARGUMENT", "Set the task API token variable (at least 16 characters)")
+                raise ToolError(
+                    "INVALID_ARGUMENT", "Set the task API token variable (at least 16 characters)"
+                )
             manager = TaskManager(args.cache_root / "tasks", json.loads(args.jobs.read_text()))
             return serve(capabilities(), args.port, manager=manager, token=token, ui_root=args.ui)
         return serve(capabilities(), args.port, ui_root=args.ui)

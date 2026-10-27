@@ -359,3 +359,7 @@ P0-P2可先用合成SDK与真实子进程验证，mock只声明流程证据；�
 - [第十二章：智能体性能评估](https://github.com/datawhalechina/hello-agents/tree/main/docs/chapter12)：将评测作为独立验收项，使用本项目的故障样本与证据/重放指标。
 
 以上是结合本项目约束作出的设计，不是声称Hello-Agents已经提供SDK二分或原生组件归因实现。不直接复制教程的通用终端工具执行模型命令，首版不强制引入其框架。
+
+## 14. 当前实施入口
+
+针对baseline + pytest命令的首版产品契约见[REGRESSION_V1.md](REGRESSION_V1.md)，细化先基线验证再update、严格最近回归补扫、目录/CLI/模型配置与验收分期。本文保留通用架构和证据要求。

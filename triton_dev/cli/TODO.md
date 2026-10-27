@@ -28,3 +28,9 @@
 ## 测试与环境
 
 默认 tests 使用合成 SDK、受控客户端或真实本地子进程；真实 SDK/设备/模型结果必须另行记录。修改公开接口时同步更新本文件、STATUS.md、help 与 tests。
+
+## Regression首版实现（未提交）
+
+已增加agent regression持久任务、真实CPU pytest实验、mock清单/update/组件/模型、二分与严格首次补扫、双向组件/组干预、预算/取消/恢复和JSON/MD/HTML/重放报告。CLI、鉴权后台HTTP和/#regression网页共用业务服务。真实SDK/任意case/模型API及原生包与板卡仍未接通。使用与边界见docs/REGRESSION_USAGE.md。
+
+2026-10-27：新增serve --multi-user/database-url-env/allowed-host/model-endpoint/secure-cookies；platform manage提供migrate/import-legacy/import-build/daily-plan/daily-tick。管理命令不启动执行worker，数据库URL只从环境读取。接口与示例见docs/PLATFORM_USAGE.md。

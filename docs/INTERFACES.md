@@ -81,3 +81,7 @@ SDK_NOT_FOUND、SDK_INCOMPLETE、INVALID_DATE、WHEEL_SELECTION_FAILED、ENV_NOT
 pytest collection元数据新增可选operator字段，使用pytest.mark.operator(name)显式标注；已有HTTP路径和运行请求不变。批次统计由页面根据原始test_results、收集元数据和父记录推导，统计导出schema_version=1；口径见[批次统计](RUN_STATISTICS.md)。
 
 逐配置测试报告由现有collection、test_results和原始test_started/worker_exit事件生成，不修改HTTP协议或原始outcome。展示分类、时间与导出字段见[测试报告](TEST_REPORT.md)。
+
+Regression接口：agent regression catalog/start/status/resume/cancel/report/replay；/api/regression/catalog、/tasks、/tasks/:id、/tasks/:id/{cancel,resume,report}和/experiments/:eid。仅登记mock场景，沿用鉴权，详见REGRESSION_USAGE.md。
+
+多人ASGI模式与管理CLI、会话/空间归属及查询接口见 [PLATFORM_USAGE.md](PLATFORM_USAGE.md)。`serve --multi-user` 与原Bearer服务为显式模式选择；远程AI调用仍返回UNSUPPORTED。

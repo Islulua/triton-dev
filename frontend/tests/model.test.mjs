@@ -153,3 +153,52 @@ test('portable test reports escape names and evidence and keep PASS/FAIL colour 
   assert.equal(buildTestReport(record).rows[0].startedAt, null);
   assert.equal(buildTestReport(record).rows[0].duration, null);
 });
+
+const { regressionView, heroText, repeatOutcome } = await import('../src/regression-view.js');
+test('regression view never turns partial repeats or an early stop into completed progress', () => {
+  assert.equal(repeatOutcome([{repeat:0,classification:'passed'}], 2), 'incomplete');
+  assert.equal(repeatOutcome([{repeat:0,classification:'passed'},{repeat:1,classification:'target_failure'}], 2), 'unstable');
+  const r={state:'completed',result:'no_regression',phase:'latest',spec:{repeats:1,baseline:'G'},experiments:[{id:'g',label:'baseline',repeat:0,classification:'passed'},{id:'b',label:'latest',repeat:0,classification:'passed'}],inventory:[],events:[],attribution:[]};
+  const v=regressionView(r);
+  assert.equal(v.steps[0].state,'done'); assert.equal(v.steps[1].label,'最新通过');
+  assert.equal(v.steps[2].state,'skipped');assert.equal(v.steps[3].state,'skipped');
+  assert.match(heroText(r,v).title,/未发现回归/);
+});
+test('regression hero requires an audited component result rather than a partial supported row', () => {
+  const r={state:'budget_exhausted',result:'boundary_found',phase:'components',spec:{repeats:1,baseline:'G'},experiments:[],inventory:[],events:[],boundary:{good:{id:'G'},bad:{id:'B'}},attribution:[{components:['cmodel'],supported:true}]};
+  const v=regressionView(r);
+  assert.match(heroText(r,v).title,/组件尚未确认/);
+  assert.equal(v.steps[3].state,'stopped');
+});
+
+const { DEMO_STEPS, regressionDemo, demoEvidence, demoReport } = await import('../src/regression-demo.js');
+test('offline regression replay reveals evidence in order and is explicitly browser-only', () => {
+  const base=regressionDemo(0);
+  assert.equal(base.source,'browser_demo'); assert.equal(base.experiments.length,2);
+  assert.equal(base.target,undefined); assert.equal(base.boundary,null);
+  assert.equal(regressionDemo(2).experiments.filter(e=>e.label==='latest').length,2);
+  assert.equal(regressionDemo(4).boundary,null);
+  assert.equal(regressionDemo(5).earliest_proven,false);
+  assert.equal(regressionDemo(6).earliest_proven,true);
+  assert.equal(regressionView(regressionDemo(8)).supported,null);
+  const finished=regressionDemo(DEMO_STEPS.length-1);
+  assert.equal(finished.result,'component_supported');assert.equal(finished.model_calls,0);
+  assert.deepEqual(regressionView(finished).supported.components,['cmodel']);
+  assert.equal(finished.experiments.length,28);
+  const evidence=demoEvidence(finished,finished.experiments[2].id);
+  assert.match(evidence.process.stdout,/未执行pytest/);
+  assert.equal(evidence.source,'browser_demo');assert.deepEqual(evidence.stages,[]);
+  assert.match(demoReport(finished).markdown,/未运行pytest/);
+  assert.doesNotMatch(demoReport(finished).markdown,/```bash/);
+  assert.throws(()=>demoEvidence(base,'missing'));
+});
+
+test('a completed passing latest SDK marks date and component searches unnecessary', () => {
+  const record = { state:'completed', result:'no_regression', phase:'latest', spec:{repeats:1,baseline:'sdk-base'}, target:{id:'sdk-latest'}, inventory:[{id:'sdk-base'},{id:'sdk-latest'}], events:[], attribution:[], experiments:[{id:'a',label:'baseline',classification:'passed'},{id:'b',label:'latest',classification:'passed'}] };
+  const view = regressionView(record);
+  assert.deepEqual(view.steps.slice(2,4).map(s=>[s.state,s.detail]),[['skipped','无需执行'],['skipped','无需执行']]);
+  assert.equal(view.supported,null);
+  const partial=regressionView({...record,spec:{...record.spec,repeats:2}});
+  assert.equal(partial.steps[2].state,'waiting');
+  assert.equal(partial.steps[3].state,'waiting');
+});

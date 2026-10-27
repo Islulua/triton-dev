@@ -66,3 +66,11 @@ loopback 任务服务及可选同源静态前端；真实环境页面待接入�
 多引擎流水线增量：8 tiles、双缓冲、11条Matmul轨道，Tile/Buffer/依赖链、跨引擎重叠和事件筛选；Trace保留flow，HTML同步分轨。新测试验证依赖完成、同引擎无重叠、缓冲复用与时间口径；仍为mock，未提交。
 
 2026-10-26 交付整理：本轮Profiling demo、时间线导航、运行统计、逐配置报告及紧凑布局纳入本次提交；上文“未提交”为各增量开发时记录。板卡测量仍为mock，回归agent新增内容为设计文档。
+
+## Regression首版实现（未提交）
+
+已增加agent regression持久任务、真实CPU pytest实验、mock清单/update/组件/模型、二分与严格首次补扫、双向组件/组干预、预算/取消/恢复和JSON/MD/HTML/重放报告。CLI、鉴权后台HTTP和/#regression网页共用业务服务。真实SDK/任意case/模型API及原生包与板卡仍未接通。使用与边界见docs/REGRESSION_USAGE.md。
+
+2026-10-27 多用户与数据库设计：详见docs/DATA_PLATFORM.md。姓名会话/个人workspace、个人模型profile与加密密钥、PostgreSQL事实源/证据BlobStore、统一任务/结果/daily模型、查询索引、DB租约与旧数据迁移；当前仅方案，尚未实现。
+
+2026-10-27：`serve --multi-user` 已增加ASGI姓名会话/个人workspace、统一数据库/持久队列/结果查询与个人AI配置。完整目标中RLS、SSO、非root容器Runner、真实环境Builder和设备租约仍待接入；见docs/PLATFORM_USAGE.md。

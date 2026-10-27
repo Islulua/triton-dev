@@ -135,3 +135,7 @@ Run 关键字段：id、owner_id、project_revision_id、environment_revision_id
 - [OWASP认证建议](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)：用于未来需要可验证身份时的认证升级；姓名登记本身不满足身份认证。
 
 当前增量已经支持单次任务的 pytest-xdist workers 与每 worker 日志，仍由全局串行任务队列调度；此功能不代替后续多用户调度、设备 lease 和容器隔离。
+
+## 数据平台细化（2026-10-27）
+
+个人Agent空间、AI配置/密钥、统一任务与daily数据库、查询/索引和迁移实施契约见[DATA_PLATFORM.md](DATA_PLATFORM.md)。仍保留name-only协作边界，不以无密码姓名登录承诺私有API额度不可被冒用。

@@ -60,6 +60,8 @@ class TaskManager:
         self.cancellations = {}
         self.index = Path(root) / 'idempotency.json'
         self.keys = json.loads(self.index.read_text()) if self.index.exists() else {}
+        from triton_dev.agent.regression.service import RegressionService
+        self.regressions = RegressionService(Path(root) / 'regressions')
 
     def read(self, run_id):
         from .pytest_jobs import view
@@ -171,4 +173,5 @@ class TaskManager:
             for event in self.cancellations.values():
                 event.set()
         self.pool.shutdown(wait=True)
+        self.regressions.close()
         self.owner.close()

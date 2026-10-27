@@ -1,0 +1,283 @@
+/* Shared UI contract. Keep these tokens aligned with docs/UI_DESIGN.md. */
+:root {
+  --ui-canvas: #ffffff;
+  --ui-surface: #f7f9fa;
+  --ui-ink: #243847;
+  --ui-muted: #607582;
+  --ui-line: #e4e9ed;
+  --ui-accent: #087f82;
+  --ui-accent-soft: #edf6f5;
+  --ui-pass: #23765e;
+  --ui-fail: #b64448;
+  --ui-crash: #7548a4;
+  --ui-warning: #8c641f;
+  --ui-info: #326b9a;
+  --ui-neutral: #687684;
+  --ui-radius: 6px;
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+  --ink: var(--ui-ink);
+  --muted: var(--ui-muted);
+  --line: var(--ui-line);
+  --teal: var(--ui-accent);
+  --teal-soft: var(--ui-accent-soft);
+  --success: var(--ui-pass);
+  --danger: var(--ui-fail);
+  color: var(--ui-ink);
+}
+body { background: var(--ui-canvas); }
+button, input, select, summary { touch-action: manipulation; }
+button:focus-visible, a:focus-visible, summary:focus-visible,
+input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--ui-accent); outline-offset: 3px;
+}
+.sidebar { background: #fafbfc; border-right-color: var(--ui-line); }
+.brand { font-size: 20px; gap: 10px; }
+.nav-item { min-height: 42px; font-size: 14px; gap: 12px; border-radius: var(--ui-radius); }
+.nav-item svg { width: 20px; height: 20px; }
+.agent-submodule { font-size: 13px; min-height: 36px; }
+.topbar { height: 56px; padding-inline: 24px; border-bottom-color: var(--ui-line); }
+.topbar-right { gap: 12px; }
+.connection-pill, .platform-connection {
+  max-width: none; background: transparent; border-color: transparent;
+  font-size: 12px; padding: 4px 0; gap: 7px; color: var(--ui-muted);
+}
+.platform-user-button { border-radius: var(--ui-radius); border-color: var(--ui-line); color: var(--ui-ink); }
+.main-content { padding: 28px 32px 32px; min-width: 0; }
+.page-heading { margin-bottom: 24px; }
+.page-heading h1, .regression-page-heading h1 { font-size: 26px; line-height: 1.3; font-weight: 650; letter-spacing: -.4px; margin: 0; }
+h2 { font-size: 18px; font-weight: 600; }
+h3 { font-size: 14px; font-weight: 600; }
+.section-toolbar { margin-bottom: 16px; gap: 12px; }
+.section-title { margin: 20px 0 12px; }
+.section-title h2 { font-size: 16px; }
+.toolbar-actions { gap: 8px; flex-wrap: wrap; }
+.button { min-height: 34px; padding: 5px 12px; font-size: 13px; border-radius: var(--ui-radius); box-shadow: none; }
+.button.primary { box-shadow: none; }
+.button.small { min-height: 30px; }
+.text-button { font-size: 12px; }
+input:not([type=checkbox]), select { min-height: 36px; font-size: 13px; border-radius: var(--ui-radius); }
+input[type=checkbox] { accent-color: var(--ui-accent); flex-shrink: 0; }
+.tabs { gap: 24px; }
+.tabs button { height: 42px; font-size: 13px; padding-inline: 2px; }
+.search { height: 36px; margin-bottom: 16px; border-radius: var(--ui-radius); }
+.main-content > .search { flex-basis: 36px; margin-bottom: 16px; }
+.search input { min-height: 32px; height: 32px; }
+.data-table th, .environment-table th { font-size: 12px; padding: 10px 12px; color: var(--ui-muted); font-weight: 600; }
+.data-table td, .environment-table td { height: auto; min-height: 44px; padding: 12px; font-size: 13px; line-height: 1.5; }
+.environment-table .row-name { font-size: 14px; }
+.environment-table .sdk-cell, .environment-table .status { font-size: 12px; }
+.secondary-line, .environment-table .secondary-line { font-size: 12px; margin-top: 2px; color: var(--ui-muted); }
+.subtle-badge { font-size: 11px; padding: 2px 6px; margin-left: 6px; color: var(--ui-muted); background: var(--ui-surface); }
+.info { padding: 10px 12px; margin: 0 0 16px; font-size: 12px; line-height: 1.6; border-radius: var(--ui-radius); }
+.error-banner { padding: 10px 12px; margin-bottom: 16px; font-size: 13px; }
+.empty, .empty-state, .ui-empty { padding: 40px 20px; text-align: center; color: var(--ui-muted); }
+.empty h2, .empty h3, .empty-state h3, .ui-empty h3 { font-size: 15px; color: var(--ui-ink); margin: 0 0 8px; }
+.empty p, .empty-state p, .ui-empty p { font-size: 13px; line-height: 1.7; margin: 0 0 16px; }
+.ui-meta, .platform-note { font-size: 12px; color: var(--ui-muted); line-height: 1.7; }
+.ui-section-toolbar, .ui-table-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.ui-table-footer { margin-top: 12px; }
+.source-label { display: inline-flex; font-size: 11px; line-height: 1.5; padding: 3px 7px; border-radius: 4px; background: #f9f2e4; color: var(--ui-warning); white-space: nowrap; }
+.ui-source-note { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: var(--ui-muted); font-size: 12px; margin-bottom: 16px; }
+.ui-disclosure { border-top: 1px solid var(--ui-line); padding: 10px 0; margin: 12px 0; font-size: 12px; color: var(--ui-muted); }
+.ui-disclosure > summary { cursor: pointer; width: fit-content; color: var(--ui-muted); line-height: 1.7; }
+.ui-disclosure > p { line-height: 1.8; max-width: 850px; margin: 12px 0 4px; overflow-wrap: anywhere; }
+.ui-feedback { font-size: 12px; color: var(--ui-pass); margin: 10px 0; }
+.ui-inline-details { display: inline-block; font-size: 11px; vertical-align: middle; }
+.ui-inline-details summary { color: var(--ui-muted); cursor: pointer; }
+.ui-inline-details code { display: block; font-size: 11px; overflow-wrap: anywhere; max-width: 240px; padding-top: 8px; }
+/* Dashboard and environment: no banners or oversized introduction sections. */
+.workflow-steps { margin: 0 0 28px; }
+.workflow-steps > button { padding: 18px 20px; }
+.workflow-steps h3 { font-size: 15px; }
+.workflow-steps p { font-size: 12px; color: var(--ui-muted); }
+.drawer-heading { padding-top: 22px; padding-bottom: 16px; }
+.drawer-heading h2 { font-size: 20px; }
+.field { margin-bottom: 18px; }
+.field label { font-size: 12px; }
+.field-hint { color: var(--ui-muted); }
+/* Pytest: compact collection context, clear run action, optional details. */
+.run-surface { margin: 0 0 20px; }
+.pytest-project { margin: 0 0 16px; }
+.pytest-project > label { font-size: 12px; }
+.pytest-project select { width: 240px; }
+.pytest-help { font-size: 12px; line-height: 1.7; margin: 10px 0 16px; }
+.pytest-collection-label { display: flex; align-items: center; gap: 12px; max-width: 680px; font-size: 12px; }
+.pytest-collection-label select { margin: 0; flex: 1; min-width: 0; }
+.pytest-collection-state { margin: 12px 0; font-size: 12px; gap: 14px; }
+.pytest-filters { margin: 16px 0 12px; }
+.pytest-run-settings { gap: 12px; padding: 12px 0; margin: 0; }
+.pytest-extensions { margin: 0 0 16px; font-size: 12px; }
+.pytest-group-heading { margin: 12px 0 8px; font-size: 12px; color: var(--ui-muted); }
+.pytest-launch { padding: 12px 0; margin-top: 12px; gap: 16px; background: white; }
+.pytest-run-heading h2 { font-size: 18px; }
+.pytest-tabs { overflow-x: auto; flex-wrap: nowrap; }
+.pytest-group-row .secondary-line { margin-top: 4px; }
+.pytest-configuration-list > div { padding-block: 10px; }
+.runstats-heading { margin: 16px 0; }
+.runstats-metric { padding: 14px; gap: 7px; }
+.runstats-metric > strong { font-size: 24px; }
+.runstats-card { padding: 16px; border-radius: var(--ui-radius); margin-bottom: 16px; }
+.runstats-grid { gap: 16px; }
+.runstats-operator { min-height: 52px; }
+.runstats-title { margin-bottom: 14px; }
+/* Reports: native compact disclosure rows, keep uppercase result blocks. */
+.reports-selectors { margin-bottom: 16px; gap: 16px; }
+.case-report-heading { margin: 16px 0 12px; }
+.case-report-heading h2 { font-size: 18px; }
+.case-report-heading p { margin: 4px 0 0; color: var(--ui-muted); }
+.case-report-context { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--ui-muted); margin-bottom: 12px; }
+.case-report-meta { border: 0; padding: 12px 0; gap: 16px; background: transparent; }
+.case-report-note { font-size: 12px; color: var(--ui-muted); }
+.case-report-legend { margin: 14px 0; padding: 10px 0; background: transparent; }
+.case-report-tools { margin: 12px 0; gap: 8px; }
+.case-report-scope { margin: 12px 0; font-size: 12px; }
+.case-report-file { border-radius: var(--ui-radius); margin-bottom: 8px; }
+.case-report-file > summary { padding: 12px 14px; }
+.case-report-test { margin: 0; border: 0; border-bottom: 1px solid var(--ui-line); border-radius: 0; }
+.case-report-test:last-child { border-bottom: 0; }
+.case-report-test > summary { padding: 10px 14px; min-height: 42px; }
+.case-result-block.PASS { background: var(--ui-pass); }
+.case-result-block.FAIL { background: var(--ui-fail); }
+.case-result-block.CRASH { background: var(--ui-crash); }
+.case-result-block.SKIP { background: var(--ui-neutral); }
+.case-result-block.XFAIL { background: var(--ui-warning); }
+.case-result-block.XPASS { background: var(--ui-crash); }
+.case-result-block.INCOMPLETE { background: var(--ui-neutral); }
+/* Profiling: report first; setup and navigation help are collapsed. */
+.profile-config { padding: 12px 16px; margin-bottom: 20px; background: var(--ui-surface); border-radius: var(--ui-radius); }
+.profile-config > summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--ui-ink); }
+.profile-config > summary svg { vertical-align: middle; margin: 0 6px 0 2px; color: var(--ui-accent); }
+.profile-config[open] > summary { margin-bottom: 18px; }
+.profile-config-footer { gap: 12px; margin-top: 16px; }
+.profile-config-footer p { font-size: 12px; }
+.profile-report-heading { margin: 18px 0 16px; }
+.profile-report-heading h2 { font-size: 21px; }
+.profile-case-path { font-size: 12px; color: var(--ui-muted); margin: 4px 0 0; }
+.profile-history { font-size: 12px; margin: 12px 0 16px; }
+.profile-metrics { gap: 0; border: 1px solid var(--ui-line); border-radius: var(--ui-radius); overflow: hidden; margin: 16px 0; }
+.profile-metric { border: 0; border-right: 1px solid var(--ui-line); border-radius: 0; padding: 16px; }
+.profile-metric:last-child { border-right: 0; }
+.profile-metric > strong { font-size: 25px; }
+.profile-tabs { margin: 16px 0; }
+.profile-chart { padding: 16px; border-radius: var(--ui-radius); }
+.profile-chart-grid, .profile-bottom-grid { gap: 16px; margin-bottom: 16px; }
+.profile-pipeline-banner { padding: 10px 12px; margin-bottom: 12px; }
+.profile-pipeline-stats { padding: 0; margin-bottom: 12px; gap: 16px; }
+.profile-chart-tools { gap: 12px; margin: 12px 0; }
+.profile-shortcuts { margin: 0 0 12px; border: 0; padding: 4px 0; }
+.profile-track > strong small { font-size: 11px; color: var(--ui-muted); }
+/* Agent: conclusion, progress, evidence. No duplicate create action. */
+.regression-page-heading { margin-bottom: 24px; }
+.regression-context { font-size: 12px; gap: 14px; padding: 12px 0; border-top: 0; border-bottom: 1px solid var(--ui-line); margin-bottom: 16px; }
+.regression-context-note { font-size: 11px; color: var(--ui-muted); }
+.regression-hero { padding: 20px; gap: 18px; min-height: 0; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); }
+.regression-hero-message { gap: 12px; }
+.regression-hero-message h2 { font-size: 20px; line-height: 1.5; }
+.regression-hero-message p { font-size: 13px; }
+.regression-hero-message small { color: var(--ui-muted); }
+.regression-hero-facts strong { font-size: 18px; }
+.regression-hero-facts span { color: var(--ui-muted); }
+.regression-hero-actions { grid-column: 1/-1; flex-direction: row; gap: 10px; flex-wrap: wrap; }
+.regression-progress { margin: 18px 0 20px; padding-bottom: 18px; }
+.regression-progress b { font-size: 12px; }
+.regression-search-heading h2 { font-size: 18px; }
+.regression-investigation-grid { gap: 20px; }
+.regression-investigation-grid h3 { font-size: 14px; }
+.regression-repro { padding: 16px; }
+/* Personal configuration and account. */
+.platform-models > .platform-note { margin: 0 0 16px; }
+.platform-profile-form { gap: 16px; padding: 20px; margin: 16px 0; }
+.ui-form-title, .ui-form-actions { grid-column: 1/-1; }
+.ui-form-title { margin: 0; font-size: 15px; }
+.ui-form-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 8px; }
+.platform-profile-form label { color: var(--ui-muted); }
+.platform-table-scroll .data-table { min-width: 580px; }
+.platform-table-scroll td { padding: 12px; font-size: 13px; }
+.platform-table-scroll td small { color: var(--ui-muted); font-size: 11px; }
+.platform-result { font-size: 11px; }
+.platform-data-filter { margin: 16px 0; gap: 8px; }
+.platform-data-filter select { width: 180px; }
+.platform-data-filter input { width: 280px; max-width: 100%; }
+.platform-account { max-width: 680px; }
+.platform-account h2 { font-size: 16px; margin: 0 0 20px; }
+.ui-account-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.ui-account-row strong { font-size: 15px; }
+.ui-account-row p { margin: 5px 0 0; }
+.ui-account-usage { margin: 24px 0 16px; }
+.ui-account-usage > div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--ui-line); padding: 12px 0; }
+.ui-account-usage dt { font-size: 13px; color: var(--ui-muted); }
+.ui-account-usage dd { font-size: 14px; margin: 0; font-variant-numeric: tabular-nums; }
+@media(min-width:1700px) { .main-content { padding-inline: 40px; } }
+@media(max-width:1100px) { .regression-hero { grid-template-columns: 1fr; } .regression-hero-facts { gap: 12px; } }
+@media(max-width:740px) {
+  .main-content { padding: 22px 18px 28px; }
+  .topbar { padding-inline: 14px; gap: 8px; }
+  .page-heading h1, .regression-page-heading h1 { font-size: 23px; }
+  .page-heading, .regression-page-heading { margin-bottom: 20px; }
+  .button { min-height: 38px; padding: 7px 11px; }
+  input:not([type=checkbox]), select { min-height: 38px; }
+  .tabs { gap: 18px; overflow-x: auto; flex-wrap: nowrap; }
+  .tabs button { height: 42px; }
+  .pytest-project select { max-width: calc(100vw - 130px); }
+  .pytest-collection-label { flex-wrap: wrap; gap: 8px; }
+  .pytest-collection-label select { flex: 1 1 100%; }
+  .pytest-launch { flex-wrap: wrap; gap: 12px; }
+  .pytest-launch .button { margin-left: auto; }
+  .case-report-meta { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .case-report-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .case-report-tools { flex-wrap: wrap; }
+  .profile-report-heading { gap: 12px; }
+  .profile-metric { padding: 14px; }
+  .profile-metric:nth-child(2) { border-right: 0; }
+  .profile-metric:nth-child(-n+2) { border-bottom: 1px solid var(--ui-line); }
+  .regression-hero { padding: 16px; }
+  .regression-context label { max-width: 100%; }
+  .regression-context select { min-width: 0; max-width: 230px; }
+  .regression-hero-facts strong { font-size: 17px; }
+  .regression-hero-facts span { white-space: normal; }
+  .regression-context-note { flex-basis: 100%; }
+  .platform-data-filter select { width: calc(50% - 4px); }
+  .platform-data-filter .button { margin-left: auto; }
+  .platform-profile-form { padding: 16px; grid-template-columns: 1fr; }
+  .ui-account-row { flex-wrap: wrap; }
+  .ui-section-toolbar { margin-top: 0; }
+}
+:root { --header: 56px; }
+.regression-progress .skipped { color: var(--ui-neutral); }
+.regression-version:first-child:nth-last-child(2), .regression-version:first-child:nth-last-child(2) ~ .regression-version { flex: 0 0 160px; }
+/* Keep report selectors and filters on one aligned row when space permits. */
+.reports-selectors { display: grid; grid-template-columns: 190px minmax(0,1fr); align-items: end; }
+.reports-selectors > label { display: flex; flex-direction: column; align-items: stretch; gap: 6px; white-space: nowrap; min-width: 0; font-size: 12px; }
+.reports-selectors select { width: 100%; min-width: 0; }
+.case-report-tools { display: grid; grid-template-columns: minmax(120px,1fr) 150px auto auto; align-items: center; padding: 0; }
+.case-report-tools input, .case-report-tools select { width: 100%; min-width: 0; max-width: none; }
+.pytest-summary { display: flex; gap: 20px; flex-wrap: wrap; padding: 12px 0; margin: 12px 0; border-block: 1px solid var(--ui-line); }
+.pytest-summary > div { display: flex; flex-direction: row; align-items: baseline; gap: 6px; padding: 0; border: 0; }
+.pytest-summary strong { font-size: 17px; }
+.pytest-summary span { font-size: 12px; color: var(--ui-muted); }
+.pytest-case-nav .mono { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media(max-width:740px) {
+  .reports-selectors { grid-template-columns: 1fr; gap: 12px; }
+  .case-report-tools { grid-template-columns: minmax(0,1fr) auto auto; }
+  .case-report-tools input { grid-column: 1/-1; }
+  .case-report-tools select { width: 100%; }
+  .case-report-tools .button { padding-inline: 8px; font-size: 12px; }
+}
+.tabs, .pytest-tabs, .profile-tabs { overflow-y: hidden; }
+.workflow-steps { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.workflow-steps > button { border-bottom: 0; border-right: 1px solid var(--ui-line); padding: 18px!important; }
+.workflow-steps > button:last-child { border-right: 0; }
+.platform-result.component_supported, .platform-result.group_supported { background: var(--ui-accent-soft); color: var(--ui-pass); }
+@media(max-width:740px) {
+  .workflow-steps { grid-template-columns: 1fr; }
+  .workflow-steps > button { padding: 14px 0!important; border-right: 0; border-bottom: 1px solid var(--ui-line); }
+}
+.case-result-block.TIMEOUT { background: var(--ui-warning); }
+.case-result-block.CANCELLED, .case-result-block.PENDING { background: var(--ui-neutral); }
+.case-result-block.RUNNING { background: var(--ui-info); }
+.regression-hero-facts.compact { grid-template-columns: 1fr; }
