@@ -142,3 +142,7 @@ triton-dev doctor --json
 使用 `pip install -e '.[server]'` 与 `serve --multi-user` 启用姓名登录、个人空间、个人模型配置和数据库数据中心。正式共享模式使用 PostgreSQL；操作、管理 CLI 和当前边界见 [PLATFORM_USAGE.md](docs/PLATFORM_USAGE.md)。真实模型 API、SDK Builder 和设备隔离仍待接入。
 
 界面布局、模块设计原则与公共颜色 / 间距规范见 [UI_DESIGN.md](docs/UI_DESIGN.md)，浏览器验收与预览见 [UI_REFINEMENT_QA.md](docs/UI_REFINEMENT_QA.md)。
+
+完整Daily流水线、严格全PASS日历、质量报告、数据库日志与API/CLI对照设计见 [DAILY_PIPELINE_DESIGN.md](docs/DAILY_PIPELINE_DESIGN.md)；当前为待实现方案。
+
+Daily可用首版见 [DAILY_USAGE.md](docs/DAILY_USAGE.md)：Mock SDK/环境、真实CPU测试、质量日历、数据库日志与CLI。

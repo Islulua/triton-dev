@@ -12,3 +12,9 @@
 - [ ] legacy 证据全量迁移与显式管理员分配
 
 实际使用与部署边界：docs/PLATFORM_USAGE.md。默认测试为合成 SDK 与真实 CPU 子进程；可显式启用 PostgreSQL schema 验收，不访问真实模型/板卡。
+
+## Daily 完整机制设计（2026-10-27）
+
+方案见docs/DAILY_PIPELINE_DESIGN.md：SDK发现/冻结→环境构建/探针→pytest集合→报告/日历，严格全PASS判色、独立复测、数据库日志原文与索引、API/CLI一一对应。当前仅设计，现有daily仍是元数据/登记环境模式；待按文档阶段实施与真实板卡验收。
+
+2026-10-27 Daily首版：Mock SDK/环境流水线、真实CPU pytest/xdist与算子集合选择、个人每日计划、SQL日志正文/配置结果、严格质量日历、筛选表/日志跳转/复测/导出，以及全部公开任务API的daily CLI已实现。实际接口、统计与生产边界见docs/DAILY_USAGE.md；真实SDK/任意项目suite/板卡仍待接入。

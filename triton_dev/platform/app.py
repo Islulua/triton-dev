@@ -41,7 +41,14 @@ def create_app(
         def daily_loop():
             while not stopped.wait(30):
                 try:
-                    platform.daily.tick()
+                    for tick in (platform.daily.tick, platform.daily_v2.tick):
+                        try:
+                            tick()
+                        except Exception as exc:
+                            app.state.daily_error = {
+                                "code": getattr(exc, "code", "DAILY_SCHEDULER_ERROR")
+                            }
+
                 except Exception:
                     pass
 
@@ -125,6 +132,10 @@ def create_app(
 
     def ok(value):
         return envelope(value)
+
+    from .daily_api import register_daily
+
+    register_daily(app, platform, actor, body, ok)
 
     @app.get("/api/capabilities")
     def cap():

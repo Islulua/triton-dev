@@ -10,6 +10,7 @@ from .auth import Auth
 from .ai import ModelProfiles
 from .runtime import Queue
 from .daily import Daily
+from .daily_v2 import DailyWorkflow
 from .repository import Repository
 from . import models as m
 
@@ -21,6 +22,7 @@ class Platform:
         self.profiles = ModelProfiles(self.db, root, allowed_endpoints)
         self.queue = Queue(self.db, jobs or {}, start_worker=start_worker)
         self.daily = Daily(self.db, self.queue)
+        self.daily_v2 = DailyWorkflow(self.db, self.queue)
 
     def manager(self, actor):
         return self.queue.manager(actor["workspace_id"])

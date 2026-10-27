@@ -160,6 +160,8 @@ def parser_factory():
     p.add_argument("--input",type=Path)
     p.add_argument("--database-url-env",default="TRITON_DEV_DATABASE_URL")
     p.add_argument("--jobs",type=Path)
+    from .daily import register as register_daily
+    register_daily(sub, leaf)
     from .offline import register
     register(sub, esub, cs, ds, ag, leaf, selection)
     return root
@@ -306,6 +308,9 @@ def dispatch(args):
     handled, result = offline_dispatch(args, selected, overrides)
     if handled:
         return result
+    if command.startswith("daily."):
+        from .daily import dispatch as daily_dispatch
+        return daily_dispatch(args)
     if command == "capabilities":
         return capabilities()
     if command == "describe":
@@ -464,7 +469,7 @@ def dispatch(args):
         )
         try:
             if args.operation == "migrate":
-                return {"schema": "0002_stage_results", "database": platform.db.engine.dialect.name}
+                return {"schema": "0003_daily", "database": platform.db.engine.dialect.name}
             if args.operation == "import-legacy":
                 if not args.input:
                     raise ToolError("INVALID_ARGUMENT", "--input directory required")

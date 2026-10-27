@@ -334,6 +334,10 @@ class Queue:
         try:
             if row["kind"] == "regression":
                 manager.regressions._run(task_id, cancel)
+            elif row["kind"] == "daily":
+                from .daily_v2 import DailyWorkflow
+
+                DailyWorkflow(self.db, self).execute(row, cancel)
             elif row["kind"] == "pytest":
                 manager._run(task_id, cancel)
                 final = manager.read(task_id)

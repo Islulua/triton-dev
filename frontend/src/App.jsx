@@ -12,6 +12,7 @@ import { CASES, SDKS, DEMO_DATE, loadState, validateCombination, validateParams,
   combinationDiff, demoFailure, sdkLabel, tritonLabel, torchLabel, normalizeTask } from './model';
 import { request, downloadJson, setSessionContext } from './api';
 import { NameLogin, PersonalModels, DataWorkspace, AccountSettings } from './PlatformWorkspace';
+import { DailyWorkspace } from './DailyWorkspace';
 import { PytestWorkspace } from './PytestWorkspace';
 import { RegressionWorkspace } from './RegressionWorkspace';
 import { ProfilingWorkspace } from './ProfilingWorkspace';
@@ -19,7 +20,7 @@ import { RunOverview } from './RunOverview';
 import { ReportsWorkspace, TestReportPreview } from './TestReportPreview';
 import { demoStatisticsRecord, buildRunStatistics, filterStatisticRows } from './run-statistics';
 
-const NAV = [ ['home', '工作台', IconHome], ['env', '环境与制品', IconPackages],
+const NAV = [ ['daily', 'Daily', IconClock], ['home', '工作台', IconHome], ['env', '环境与制品', IconPackages],
   ['runs', '用例与运行', IconPlayerPlay], ['reports', '测试报告', IconFileReport], ['profiling', 'Profiling', IconActivity], ['diagnosis', '诊断与证据', IconFileAnalytics], ['data', '数据中心', IconFolder] ];
 const STATUSES = {
   imported: ['导入通过', IconCircleCheckFilled, 'success'], unverified: ['未验证', IconCircleMinus, 'muted'],
@@ -301,7 +302,7 @@ export function App() {
   const filteredRuns = runs.filter(r => `${r.id} ${r.name} ${r.env}`.toLowerCase().includes(query.toLowerCase()));
   const toggleCase = id => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const heading = { home: ['工作台', '从明确的环境组合开始，完成一次可复现的验证。'], env: ['环境与制品', '每次运行绑定明确的版本组合。'],
-    runs: ['用例与运行', '选择用例、查看执行现场，并保留每一次复测。'], reports: ['测试报告', '按文件、逻辑用例和参数配置查看每项结果与执行证据。'], profiling: ['Profiling', '绑定一个 case 与一个环境，观察执行时间线与性能指标。'], regression: ['回归定位', '从基线验证到版本边界、组件干预和可复现调研报告。'], models: ['个人模型配置', '管理自己的模型端点、配置版本和加密密钥。'], data: ['数据中心', '按空间、任务、case和daily制品查询历史数据。'], diagnosis: ['诊断与证据', '让判断有依据，让复现可以移交。'], settings: ['设置', '管理本地连接与界面偏好。'] }[page];
+    daily: ['Daily',''], runs: ['用例与运行', '选择用例、查看执行现场，并保留每一次复测。'], reports: ['测试报告', '按文件、逻辑用例和参数配置查看每项结果与执行证据。'], profiling: ['Profiling', '绑定一个 case 与一个环境，观察执行时间线与性能指标。'], regression: ['回归定位', '从基线验证到版本边界、组件干预和可复现调研报告。'], models: ['个人模型配置', '管理自己的模型端点、配置版本和加密密钥。'], data: ['数据中心', '按空间、任务、case和daily制品查询历史数据。'], diagnosis: ['诊断与证据', '让判断有依据，让复现可以移交。'], settings: ['设置', '管理本地连接与界面偏好。'] }[page];
 
   return <div className={`app ${panel ? 'has-drawer' : ''}`}>
     <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`} aria-label="主导航" inert={overlay && !!panel}>
@@ -319,7 +320,7 @@ export function App() {
     </header>
     <div className="workspace">
       <main className="main-content" id="main" inert={overlay && !!panel}>
-        {page !== 'regression' && !(page === 'runs' && activeRun) && <div className="page-heading"><h1>{heading[0]}</h1></div>}
+        {!['regression','daily'].includes(page) && !(page === 'runs' && activeRun) && <div className="page-heading"><h1>{heading[0]}</h1></div>}
         {mode === 'local' && ['env', 'home', 'diagnosis'].includes(page) && <Info warning>本页为演示数据，未操作实际制品。</Info>}
         {connectionError && mode === 'local' && <div className="error-banner" role="alert"><IconAlertCircle size={18} />{connectionError}<button onClick={() => navigate('settings')}>检查连接</button></div>}
 
@@ -343,6 +344,7 @@ export function App() {
         {page === 'runs' && (mode !== 'local' || runSurface === 'command') && activeRun && renderRunDetail(activeRun)}
 
         {page === 'reports' && <ReportsWorkspace records={mode === 'local' ? apiRuns.map(r => r.record) : data.runs.map(r => ({ ...demoStatisticsRecord(r, CASES), job_id: 'browser-demo' }))} demo={mode !== 'local'} onSettings={() => navigate('settings')} onRun={() => navigate('runs')}/>}
+        {page === 'daily' && <DailyWorkspace key={sessionUser?.workspace_id || 'local'} token={connected ? token : ''} onSettings={() => platformInfo ? setLoginOpen(true) : navigate('settings')}/>}
         {page === 'regression' && <RegressionWorkspace key={sessionUser?.workspace_id || 'local'} multiUser={!!platformInfo} token={connected ? token : ''} onSettings={() => navigate('settings')}/>}
         {page === 'profiling' && <ProfilingWorkspace key={sessionUser?.workspace_id || 'local'} token={connected ? token : ''} onSettings={() => navigate('settings')}/>}
         {page === 'diagnosis' && <div className="diagnosis-body"><div className="section-title"><h2>版本对照</h2></div><div className="comparison-form"><Field label="通过基线"><Select value={compareLeft} onChange={e => setCompareLeft(e.target.value)}>{envs.map(e => <option key={e.name}>{e.name}</option>)}</Select></Field><IconArrowRight size={23} className="compare-arrow" /><Field label="候选组合"><Select value={compareRight} onChange={e => setCompareRight(e.target.value)}>{envs.map(e => <option key={e.name}>{e.name}</option>)}</Select></Field></div><Field label="目标故障判据" hint="判据在实验前固定，不以任意失败代替目标故障。"><input value="call 阶段失败，日志包含 AssertionError" readOnly /></Field>{error && <p className="field-error" role="alert">{error}</p>}<Button primary icon={busy ? IconRefresh : IconPlayerPlay} disabled={busy || mode === 'local'} onClick={runDiagnosis}>{busy ? '生成演示观察…' : '运行演示对照'}</Button><p className="muted tiny">固定演示：基线 2 次通过、候选 2 次目标故障；不会执行后端实验。</p>{diagnostic && <div className="diagnostic-result"><h2>组合变化关联，最终归属未确认</h2><p>仅依据当前演示观察；尚不能推断 LLVM、cmodel 或 Triton 的缺陷归属。</p><table className="data-table"><thead><tr><th>观察 ID</th><th>环境组合</th><th>判据结果</th></tr></thead><tbody>{diagnostic.observations.map(([id, label]) => <tr key={id}><td className="mono">{id}</td><td>{id.startsWith('good') ? diagnostic.good : diagnostic.bad}</td><td><Status value={id.startsWith('good') ? 'passed' : 'failed'}>{label}</Status></td></tr>)}</tbody></table><Button icon={IconDownload} onClick={() => downloadJson('triton-dev-demo-diagnosis.json', diagnostic)}>导出演示对照报告</Button></div>}<button className="assistant-toggle" aria-expanded={assistant} onClick={() => setAssistant(!assistant)}><IconSparkles size={20} /><span>诊断助手<span className="muted"> · 脚本模型</span></span><IconChevronDown size={17} /></button>{assistant && <div className="assistant-body"><p>尚未接入实时 AI。建议先确认基线仍通过，再逐个替换支持独立切换的组件。</p><p className="muted">CLI 已提供受预算约束的脚本工作流；界面不会从日志推断未经验证的责任方。</p><Button small icon={IconCopy} onClick={() => copy('triton-dev agent workflow workflow.json --checkpoint state.json')}>复制工作流命令</Button></div>}</div>}

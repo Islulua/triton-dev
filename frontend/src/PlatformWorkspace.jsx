@@ -4,7 +4,7 @@ import { request } from './api';
 import './platform.css';
 
 const states = { queued:'排队中', running:'运行中', completed:'已完成', passed:'通过', failed:'失败', error:'执行错误', cancelled:'已取消', interrupted:'已中断', timeout:'超时', skipped:'跳过', no_regression:'未发现回归', candidate:'候选', incomplete:'未完成', component_supported:'组件关联已验证', group_supported:'组件组关联已验证', baseline_invalid:'基线未通过', unstable:'结果波动', boundary_found:'已找到版本范围', budget_exhausted:'预算已用尽', unavailable:'不可用', xfailed:'预期失败', xpassed:'意外通过' };
-const types = { regression:'回归调查', pytest:'测试运行', profiling:'Profiling' };
+const types = { daily:'Daily', regression:'回归调查', pytest:'测试运行', profiling:'Profiling' };
 const shortId = value => value ? `${value.split('_')[0]} · ${value.slice(-8)}` : '—';
 const bytes = value => value < 1024 ? `${value} B` : value < 1048576 ? `${(value/1024).toFixed(1)} KB` : `${(value/1048576).toFixed(1)} MB`;
 

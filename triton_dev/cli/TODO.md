@@ -34,3 +34,5 @@
 已增加agent regression持久任务、真实CPU pytest实验、mock清单/update/组件/模型、二分与严格首次补扫、双向组件/组干预、预算/取消/恢复和JSON/MD/HTML/重放报告。CLI、鉴权后台HTTP和/#regression网页共用业务服务。真实SDK/任意case/模型API及原生包与板卡仍未接通。使用与边界见docs/REGRESSION_USAGE.md。
 
 2026-10-27：新增serve --multi-user/database-url-env/allowed-host/model-endpoint/secure-cookies；platform manage提供migrate/import-legacy/import-build/daily-plan/daily-tick。管理命令不启动执行worker，数据库URL只从环境读取。接口与示例见docs/PLATFORM_USAGE.md。
+
+2026-10-27 Daily首版：Mock SDK/环境流水线、真实CPU pytest/xdist与算子集合选择、个人每日计划、SQL日志正文/配置结果、严格质量日历、筛选表/日志跳转/复测/导出，以及全部公开任务API的daily CLI已实现。实际接口、统计与生产边界见docs/DAILY_USAGE.md；真实SDK/任意项目suite/板卡仍待接入。
