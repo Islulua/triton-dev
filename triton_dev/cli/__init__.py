@@ -162,6 +162,8 @@ def parser_factory():
     p.add_argument("--jobs",type=Path)
     from .daily import register as register_daily
     register_daily(sub, leaf)
+    from .ir import register as register_ir
+    register_ir(sub, leaf)
     from .offline import register
     register(sub, esub, cs, ds, ag, leaf, selection)
     return root
@@ -311,6 +313,9 @@ def dispatch(args):
     if command.startswith("daily."):
         from .daily import dispatch as daily_dispatch
         return daily_dispatch(args)
+    if command.startswith("ir."):
+        from .ir import dispatch as ir_dispatch
+        return ir_dispatch(args)
     if command == "capabilities":
         return capabilities()
     if command == "describe":

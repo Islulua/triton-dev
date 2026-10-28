@@ -36,3 +36,7 @@
 2026-10-27：新增serve --multi-user/database-url-env/allowed-host/model-endpoint/secure-cookies；platform manage提供migrate/import-legacy/import-build/daily-plan/daily-tick。管理命令不启动执行worker，数据库URL只从环境读取。接口与示例见docs/PLATFORM_USAGE.md。
 
 2026-10-27 Daily首版：Mock SDK/环境流水线、真实CPU pytest/xdist与算子集合选择、个人每日计划、SQL日志正文/配置结果、严格质量日历、筛选表/日志跳转/复测/导出，以及全部公开任务API的daily CLI已实现。实际接口、统计与生产边界见docs/DAILY_USAGE.md；真实SDK/任意项目suite/板卡仍待接入。
+
+## Kernel / IR 增量
+
+- [x] ir import/compilers/list/compile/status/cancel 与统一 help/describe/schema；复用同源个人会话。

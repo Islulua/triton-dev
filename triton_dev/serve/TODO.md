@@ -1,5 +1,7 @@
 # serve — TODO 与进度
 
+- [x] Bearer 模式 IR 位置解析导入与能力查询；实际编译由 multi-user SQL 服务处理。Monaco 脚本与 worker 保持同源，本地 style 动态渲染所需 CSP 已配置。
+
 ## 当前进度
 
 loopback 任务服务及可选同源静态前端；真实环境页面待接入。

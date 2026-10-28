@@ -170,8 +170,9 @@ class Cancel:
 
 
 class Queue:
-    def __init__(self, db, jobs, start_worker=True):
+    def __init__(self, db, jobs, start_worker=True, ir_compilers=None):
         self.db, self.jobs = db, copy.deepcopy(jobs)
+        self.ir_compilers = ir_compilers
         # Validate trusted registry with the existing validator, in a separate temporary scope.
         import tempfile
 
@@ -338,6 +339,10 @@ class Queue:
                 from .daily_v2 import DailyWorkflow
 
                 DailyWorkflow(self.db, self).execute(row, cancel)
+            elif row["kind"] == "ir":
+                from triton_dev.ir.compilation import CompilationService
+
+                CompilationService(self.db, self.ir_compilers).execute(row, cancel)
             elif row["kind"] == "pytest":
                 manager._run(task_id, cancel)
                 final = manager.read(task_id)

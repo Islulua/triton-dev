@@ -16,11 +16,14 @@ from . import models as m
 
 
 class Platform:
-    def __init__(self, url, root, jobs=None, allowed_endpoints=(), start_worker=True):
+    def __init__(self, url, root, jobs=None, allowed_endpoints=(), start_worker=True, ir_compilers=None):
+        from triton_dev.ir.compilation import CompilerRegistry
+
         self.db = Database(url, root)
         self.auth = Auth(self.db)
         self.profiles = ModelProfiles(self.db, root, allowed_endpoints)
-        self.queue = Queue(self.db, jobs or {}, start_worker=start_worker)
+        self.ir_compilers = ir_compilers if ir_compilers is not None else CompilerRegistry.from_environment()
+        self.queue = Queue(self.db, jobs or {}, start_worker=start_worker, ir_compilers=self.ir_compilers)
         self.daily = Daily(self.db, self.queue)
         self.daily_v2 = DailyWorkflow(self.db, self.queue)
 

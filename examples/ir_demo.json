@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "kernel": "vector_add",
+  "source_kind": "illustrative",
+  "source_hash": "illustrative-vector-add-v1",
+  "source": {
+    "code": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef vector_add(X, Y, Z, N: tl.constexpr, BLOCK: tl.constexpr):\n    pid = tl.program_id(0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    x = tl.load(X + offsets, mask=mask, other=0.0)\n    y = tl.load(Y + offsets, mask=mask, other=0.0)\n    z = x + y\n    tl.store(Z + offsets, z, mask=mask)\n",
+    "file_path": "/examples/vector_add.py",
+    "start_line": 1
+  },
+  "metadata": {
+    "backend": "tsingmicro · 示意",
+    "signature": {
+      "X": "*fp32",
+      "Y": "*fp32",
+      "Z": "*fp32"
+    },
+    "constexprs": {
+      "N": 1024,
+      "BLOCK": 256
+    }
+  },
+  "stages": [
+    {
+      "id": "ttir",
+      "label": "TTIR",
+      "content": "module {\n  tt.func public @vector_add(%X: !tt.ptr<f32>, %Y: !tt.ptr<f32>,\n      %Z: !tt.ptr<f32>) {\n    %pid = tt.get_program_id x : i32\n    %range = tt.make_range {start = 0, end = 256}\n    %base = arith.muli %pid, %c256 : i32\n    %offsets = arith.addi %base, %range\n    %mask = arith.cmpi slt, %offsets, %N\n    %xp = tt.addptr %X, %offsets\n    %x = tt.load %xp, %mask, %zero\n    %yp = tt.addptr %Y, %offsets\n    %y = tt.load %yp, %mask, %zero\n    %z = arith.addf %x, %y : tensor<256xf32>\n    %zp = tt.addptr %Z, %offsets\n    tt.store %zp, %z, %mask\n    tt.return\n  }\n}",
+      "mapping": {
+        "2": {
+          "file": "/examples/vector_add.py",
+          "line": 5,
+          "column": 0
+        },
+        "3": {
+          "file": "/examples/vector_add.py",
+          "line": 5,
+          "column": 0
+        },
+        "4": {
+          "file": "/examples/vector_add.py",
+          "line": 6,
+          "column": 0
+        },
+        "5": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "6": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "7": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "8": {
+          "file": "/examples/vector_add.py",
+          "line": 8,
+          "column": 0
+        },
+        "9": {
+          "file": "/examples/vector_add.py",
+          "line": 9,
+          "column": 0
+        },
+        "10": {
+          "file": "/examples/vector_add.py",
+          "line": 9,
+          "column": 0
+        },
+        "11": {
+          "file": "/examples/vector_add.py",
+          "line": 10,
+          "column": 0
+        },
+        "12": {
+          "file": "/examples/vector_add.py",
+          "line": 10,
+          "column": 0
+        },
+        "13": {
+          "file": "/examples/vector_add.py",
+          "line": 11,
+          "column": 0
+        },
+        "14": {
+          "file": "/examples/vector_add.py",
+          "line": 12,
+          "column": 0
+        },
+        "15": {
+          "file": "/examples/vector_add.py",
+          "line": 12,
+          "column": 0
+        }
+      },
+      "mapping_status": "available"
+    },
+    {
+      "id": "coreir",
+      "label": "CoreIR",
+      "content": "module {\n  func.func @vector_add(%X: memref<?xf32>,\n      %Y: memref<?xf32>, %Z: memref<?xf32>) {\n    %pid = core.program_id 0 : index\n    %base = arith.muli %pid, %c256 : index\n    scf.for %i = %c0 to %c256 step %c1 {\n      %idx = arith.addi %base, %i : index\n      %mask = arith.cmpi slt, %idx, %N\n      scf.if %mask {\n        %x = memref.load %X[%idx] : memref<?xf32>\n        %y = memref.load %Y[%idx] : memref<?xf32>\n        %z = arith.addf %x, %y : f32\n        memref.store %z, %Z[%idx] : memref<?xf32>\n      }\n    }\n    return\n  }\n}",
+      "mapping": {
+        "2": {
+          "file": "/examples/vector_add.py",
+          "line": 5,
+          "column": 0
+        },
+        "3": {
+          "file": "/examples/vector_add.py",
+          "line": 5,
+          "column": 0
+        },
+        "4": {
+          "file": "/examples/vector_add.py",
+          "line": 6,
+          "column": 0
+        },
+        "5": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "6": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "7": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "8": {
+          "file": "/examples/vector_add.py",
+          "line": 8,
+          "column": 0
+        },
+        "9": {
+          "file": "/examples/vector_add.py",
+          "line": 8,
+          "column": 0
+        },
+        "10": {
+          "file": "/examples/vector_add.py",
+          "line": 9,
+          "column": 0
+        },
+        "11": {
+          "file": "/examples/vector_add.py",
+          "line": 10,
+          "column": 0
+        },
+        "12": {
+          "file": "/examples/vector_add.py",
+          "line": 11,
+          "column": 0
+        },
+        "13": {
+          "file": "/examples/vector_add.py",
+          "line": 12,
+          "column": 0
+        }
+      },
+      "mapping_status": "available"
+    },
+    {
+      "id": "txir",
+      "label": "TxIR",
+      "content": "module {\n  func.func @vector_add(%X: !tx81.addr,\n      %Y: !tx81.addr, %Z: !tx81.addr) {\n    %pid = tx81.program_id 0 : i32\n    %offset = arith.muli %pid, %c1024 : i32\n    %mask = arith.cmpi slt, %offset, %N\n    %x = tx81.load %X, %offset : vector<256xf32>\n    %y = tx81.load %Y, %offset : vector<256xf32>\n    %sum = arith.addf %x, %y : vector<256xf32>\n    tx81.store %sum, %Z, %offset\n    return\n  }\n}",
+      "mapping": {
+        "2": {
+          "file": "/examples/vector_add.py",
+          "line": 5,
+          "column": 0
+        },
+        "3": {
+          "file": "/examples/vector_add.py",
+          "line": 5,
+          "column": 0
+        },
+        "4": {
+          "file": "/examples/vector_add.py",
+          "line": 6,
+          "column": 0
+        },
+        "5": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "6": {
+          "file": "/examples/vector_add.py",
+          "line": 8,
+          "column": 0
+        },
+        "7": {
+          "file": "/examples/vector_add.py",
+          "line": 9,
+          "column": 0
+        },
+        "8": {
+          "file": "/examples/vector_add.py",
+          "line": 10,
+          "column": 0
+        },
+        "9": {
+          "file": "/examples/vector_add.py",
+          "line": 11,
+          "column": 0
+        },
+        "10": {
+          "file": "/examples/vector_add.py",
+          "line": 12,
+          "column": 0
+        }
+      },
+      "mapping_status": "available"
+    },
+    {
+      "id": "llir",
+      "label": "LLVM IR",
+      "content": "; Illustrative lowering — not a hardware compilation\ndefine void @vector_add(ptr %X, ptr %Y, ptr %Z) {\nentry:\n  %pid = call i32 @tx81.program_id(i32 0)\n  %base = mul i32 %pid, 256\n  %mask = icmp slt i32 %base, 1024\n  %xp = getelementptr float, ptr %X, i32 %base\n  %x = load <256 x float>, ptr %xp\n  %yp = getelementptr float, ptr %Y, i32 %base\n  %y = load <256 x float>, ptr %yp\n  %z = fadd <256 x float> %x, %y\n  %zp = getelementptr float, ptr %Z, i32 %base\n  store <256 x float> %z, ptr %zp\n  ret void\n}",
+      "mapping": {
+        "2": {
+          "file": "/examples/vector_add.py",
+          "line": 5,
+          "column": 0
+        },
+        "4": {
+          "file": "/examples/vector_add.py",
+          "line": 6,
+          "column": 0
+        },
+        "5": {
+          "file": "/examples/vector_add.py",
+          "line": 7,
+          "column": 0
+        },
+        "6": {
+          "file": "/examples/vector_add.py",
+          "line": 8,
+          "column": 0
+        },
+        "7": {
+          "file": "/examples/vector_add.py",
+          "line": 9,
+          "column": 0
+        },
+        "8": {
+          "file": "/examples/vector_add.py",
+          "line": 9,
+          "column": 0
+        },
+        "9": {
+          "file": "/examples/vector_add.py",
+          "line": 10,
+          "column": 0
+        },
+        "10": {
+          "file": "/examples/vector_add.py",
+          "line": 10,
+          "column": 0
+        },
+        "11": {
+          "file": "/examples/vector_add.py",
+          "line": 11,
+          "column": 0
+        },
+        "12": {
+          "file": "/examples/vector_add.py",
+          "line": 12,
+          "column": 0
+        },
+        "13": {
+          "file": "/examples/vector_add.py",
+          "line": 12,
+          "column": 0
+        }
+      },
+      "mapping_status": "available"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 # platform — 进度与边界
 
+- [x] Kernel / IR 鉴权导入、编译能力、SQL 任务/取消/历史，复用 workspace、队列配额及租约；真实工具链需登记隔离 launcher。
+
 - [x] PostgreSQL/SQLite repository、Alembic schema、姓名会话与 workspace 隔离
 - [x] pytest/regression/profiling HTTP 适配，结果/阶段/实验/证据索引与分页
 - [x] 个人 AI profile revision、加密 write-only Key、mock 协议测试

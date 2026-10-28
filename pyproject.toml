@@ -20,6 +20,9 @@ triton-env = "triton_dev.cli:legacy_entrypoint"
 [tool.setuptools]
 include-package-data = false
 
+[tool.setuptools.package-data]
+"triton_dev.ir.vendor" = ["LICENSE", "README.md"]
+
 [tool.setuptools.packages.find]
 include = ["triton_dev*"]
 exclude = ["*.tests", "*.tests.*"]

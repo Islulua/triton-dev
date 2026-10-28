@@ -1,5 +1,13 @@
 # 实现进度
 
+2026-10-28：Kernel / IR 页面更名为 Kernel Lab（Kernel 实验室），突出 Kernel 调试与调优用途；导航、标题、加载提示及文档同步。
+
+## Kernel / IR 工作台（2026-10-27）
+
+现有导航新增 Kernel / IR；接入固定 BSD TritonParse 位置解析器、主要动态阶段、JSON/NDJSON/gzip 导入、Monaco 源码编辑、多面板/版本 diff/独立窗口和双向位置高亮。新增 SQL ir 编译任务、管理员登记隔离启动器、ASTSource 编译 worker、asm 文本产物、鉴权 API/CLI、预算/取消/日志与历史。未修改 Triton/FlagTree。手写样例、导入产物与本服务编译结果明确区分；缺少编译器时不执行源码。真实 TX82 SDK/工具链与 loc 保留尚待内网验证；详见 docs/KERNEL_IR.md。
+
+验证：本机 Python 3.12 / SQLite 完整离线177项通过；前端29项与Sites静态4项通过，ruff、前端/Python构建、仓库外安装wheel的IR解析/CLI/license smoke通过。浏览器验证导入、阶段切换、编辑失效、多面板/同阶段diff、独立窗口TxIR联动，390px无根横向溢出；修正diff编辑器模型释放顺序后新构建无该控制台错误。截图见frontend/design/kernel-ir/。依赖当前Starlette/httpx有一条上游弃用提示，Vite保留编辑器大chunk提示；编辑器按路由加载。未提交、未推送。
+
 v0.2：离线自动化原型。未接入真实 Triton、cmodel、设备、内部 JFrog 或 live AI。默认离线测试通过不代表真实环境通过。
 
 | 模块 | 当前进度 |

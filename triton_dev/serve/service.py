@@ -25,7 +25,7 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', 'no-store')
             self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'")
+            self.send_header("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'")
             self.end_headers()
             self.wfile.write(body)
 
@@ -71,7 +71,9 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 return
             try:
                 parts = path.path.strip('/').split('/')
-                if parts == ['api', 'regression', 'catalog']:
+                if parts == ['api', 'ir', 'compilers']:
+                    value = {'compilers': [], 'available': False, 'requires': 'multi_user_compilation_service'}
+                elif parts == ['api', 'regression', 'catalog']:
                     from triton_dev.agent.regression.service import catalog as regression_catalog
                     value = regression_catalog()
                 elif parts == ['api', 'regression', 'tasks']:
@@ -144,14 +146,20 @@ def handler_factory(capabilities, manager=None, token=None, ui_root=None):
                 return
             try:
                 length = int(self.headers.get('Content-Length', '0'))
-                if not 0 < length <= 65536:
+                if not 0 < length <= (3 * 1024 * 1024 if urlsplit(self.path).path == '/api/ir/import' else 65536):
                     raise ToolError('INVALID_ARGUMENT', 'JSON request size must be 1..65536 bytes')
                 self.connection.settimeout(5)
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ToolError('INVALID_ARGUMENT', 'JSON object required')
                 parts = urlsplit(self.path).path.strip('/').split('/')
-                if parts == ['api', 'regression', 'tasks'] and set(data) == {'config', 'idempotency_key'}:
+                if parts == ['api', 'ir', 'import'] and set(data) == {'data'}:
+                    import base64
+                    from triton_dev.ir.documents import import_trace
+                    if not isinstance(data['data'], str):
+                        raise ToolError('INVALID_TRACE', 'Base64 trace string required')
+                    value = {'documents': import_trace(base64.b64decode(data['data'], validate=True)), 'parser': 'tritonparse'}
+                elif parts == ['api', 'regression', 'tasks'] and set(data) == {'config', 'idempotency_key'}:
                     value = manager.regressions.start(data['config'], idempotency_key=data['idempotency_key'])
                 elif len(parts) == 5 and parts[:3] == ['api', 'regression', 'tasks'] and parts[4] in {'cancel', 'resume'} and data == {}:
                     value = getattr(manager.regressions, parts[4])(parts[3])

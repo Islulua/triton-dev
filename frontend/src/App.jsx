@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   IconHome, IconPackages, IconPlayerPlay, IconFileAnalytics, IconSettings,
   IconSearch, IconScale, IconPlus, IconX, IconCircleCheckFilled, IconCircleMinus,
@@ -19,8 +19,9 @@ import { ProfilingWorkspace } from './ProfilingWorkspace';
 import { RunOverview } from './RunOverview';
 import { ReportsWorkspace, TestReportPreview } from './TestReportPreview';
 import { demoStatisticsRecord, buildRunStatistics, filterStatisticRows } from './run-statistics';
+const KernelWorkspace = lazy(() => import('./KernelWorkspace').then(module => ({ default: module.KernelWorkspace })));
 
-const NAV = [ ['daily', 'Daily', IconClock], ['home', '工作台', IconHome], ['env', '环境与制品', IconPackages],
+const NAV = [ ['daily', 'Daily', IconClock], ['home', '工作台', IconHome], ['env', '环境与制品', IconPackages], ['kernel', 'Kernel Lab', IconTerminal2],
   ['runs', '用例与运行', IconPlayerPlay], ['reports', '测试报告', IconFileReport], ['profiling', 'Profiling', IconActivity], ['diagnosis', '诊断与证据', IconFileAnalytics], ['data', '数据中心', IconFolder] ];
 const STATUSES = {
   imported: ['导入通过', IconCircleCheckFilled, 'success'], unverified: ['未验证', IconCircleMinus, 'muted'],
@@ -320,7 +321,8 @@ export function App() {
     </header>
     <div className="workspace">
       <main className="main-content" id="main" inert={overlay && !!panel}>
-        {!['regression','daily'].includes(page) && !(page === 'runs' && activeRun) && <div className="page-heading"><h1>{heading[0]}</h1></div>}
+        {!['regression','daily','kernel'].includes(page) && !(page === 'runs' && activeRun) && <div className="page-heading"><h1>{heading[0]}</h1></div>}
+        {page === 'kernel' && <Suspense fallback={<p className="muted">正在加载 Kernel Lab…</p>}><KernelWorkspace key={sessionUser?.workspace_id || (connected ? 'bearer' : 'offline')} connected={connected} token={token} user={sessionUser}/></Suspense>}
         {mode === 'local' && ['env', 'home', 'diagnosis'].includes(page) && <Info warning>本页为演示数据，未操作实际制品。</Info>}
         {connectionError && mode === 'local' && <div className="error-banner" role="alert"><IconAlertCircle size={18} />{connectionError}<button onClick={() => navigate('settings')}>检查连接</button></div>}
 

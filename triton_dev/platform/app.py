@@ -81,7 +81,7 @@ def create_app(
             except ValueError:
                 length = 0
             if (
-                not 0 < length <= 65536
+                not 0 < length <= (3 * 1024 * 1024 if request.url.path == '/api/ir/import' else 65536)
                 or request.headers.get("content-type", "").split(";")[0] != "application/json"
             ):
                 return JSONResponse(
@@ -91,7 +91,7 @@ def create_app(
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
         )
         return response
 
@@ -136,6 +136,9 @@ def create_app(
     from .daily_api import register_daily
 
     register_daily(app, platform, actor, body, ok)
+    from triton_dev.ir.api import register_ir
+
+    register_ir(app, platform, actor, body, ok)
 
     @app.get("/api/capabilities")
     def cap():

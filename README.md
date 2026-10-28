@@ -1,5 +1,7 @@
 # triton-dev
 
+新增 [Kernel Lab 工作台](docs/KERNEL_IR.md)：在现有网页中编辑 kernel、查看/对比主要阶段 IR、点击源码联动高亮并导入 TritonParse trace。实际编译使用服务器登记的隔离执行器；本机示意样例明确标注未编译。
+
 一个模块化的 SDK 环境、测试执行与证据驱动回归工具集。**v0.2 离线自动化原型，无需真实 Triton 即可运行离线测试。** 所有尚未接入真实环境的能力都会标记 `not_checked` 或返回 `UNSUPPORTED`，不会伪造成功。
 
 ## 安装
