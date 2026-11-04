@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   IconHome, IconPackages, IconPlayerPlay, IconFileAnalytics, IconSettings,
   IconSearch, IconScale, IconPlus, IconX, IconCircleCheckFilled, IconCircleMinus,
@@ -6,7 +6,7 @@ import {
   IconCopy, IconDownload, IconRefresh, IconCheck, IconArrowRight, IconFlask,
   IconTerminal2, IconCircleXFilled, IconClock, IconFolder, IconShieldCheck,
   IconPlugConnected, IconAlertCircle, IconArrowLeft, IconMenu2, IconPlayerStop,
-  IconSparkles, IconCircleFilled, IconActivity, IconFileReport,
+  IconSparkles, IconCircleFilled, IconActivity, IconFileReport, IconTools,
 } from '@tabler/icons-react';
 import { CASES, SDKS, DEMO_DATE, loadState, validateCombination, validateParams,
   combinationDiff, demoFailure, sdkLabel, tritonLabel, torchLabel, normalizeTask } from './model';
@@ -19,9 +19,10 @@ import { ProfilingWorkspace } from './ProfilingWorkspace';
 import { RunOverview } from './RunOverview';
 import { ReportsWorkspace, TestReportPreview } from './TestReportPreview';
 import { demoStatisticsRecord, buildRunStatistics, filterStatisticRows } from './run-statistics';
+const ToolsWorkspace = lazy(() => import('./ToolsWorkspace').then(module => ({ default: module.ToolsWorkspace })));
 const KernelWorkspace = lazy(() => import('./KernelWorkspace').then(module => ({ default: module.KernelWorkspace })));
 
-const NAV = [ ['daily', 'Daily', IconClock], ['home', '工作台', IconHome], ['env', '环境与制品', IconPackages], ['kernel', 'Kernel Lab', IconTerminal2],
+const NAV = [ ['daily', 'Daily', IconClock], ['home', '工作台', IconHome], ['env', '环境与制品', IconPackages], ['kernel', 'Kernel Lab', IconTerminal2], ['tools', 'Tools', IconTools],
   ['runs', '用例与运行', IconPlayerPlay], ['reports', '测试报告', IconFileReport], ['profiling', 'Profiling', IconActivity], ['diagnosis', '诊断与证据', IconFileAnalytics], ['data', '数据中心', IconFolder] ];
 const STATUSES = {
   imported: ['导入通过', IconCircleCheckFilled, 'success'], unverified: ['未验证', IconCircleMinus, 'muted'],
@@ -54,7 +55,7 @@ function Search({ value, onChange, placeholder }) {
 export function App() {
   const [platformInfo, setPlatformInfo] = useState(null), [sessionUser, setSessionUser] = useState(null), [loginOpen, setLoginOpen] = useState(false), [loginBusy, setLoginBusy] = useState(false), [loginError, setLoginError] = useState('');
   const [data, setData] = useState(() => loadState(window.localStorage));
-  const [page, setPage] = useState(() => [...NAV.map(([id]) => id), 'regression', 'models', 'settings'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'env');
+  const [page, setPage] = useState(() => [...NAV.map(([id]) => id), 'regression', 'models', 'settings', 'tools-cga', 'tools-blocked'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'env');
   const [agentOpen, setAgentOpen] = useState(() => ['#regression','#models'].includes(window.location.hash));
   const [overlay, setOverlay] = useState(() => window.innerWidth <= 1000);
   const [envTab, setEnvTab] = useState('saved');
@@ -105,7 +106,7 @@ export function App() {
   useEffect(() => {
     const syncRoute = () => {
       const next = window.location.hash.slice(1);
-      if (![...NAV.map(([id]) => id), 'regression', 'models', 'settings'].includes(next)) return;
+      if (![...NAV.map(([id]) => id), 'regression', 'models', 'settings', 'tools-cga', 'tools-blocked'].includes(next)) return;
       setPage(next); setPanel(null); setMobileNav(false); setRowMenu(null); setError(''); setQuery('');
       if (['regression', 'models'].includes(next)) setAgentOpen(true);
       if (next !== 'runs') setCurrentRun(null);
@@ -180,7 +181,7 @@ export function App() {
       if (!alive || info?.platform?.mode !== 'multi-user') return;
       setPlatformInfo(info.platform);
       try { const user = await request('/me'); if (alive) await applySession(user); }
-      catch { if (alive) setLoginOpen(true); }
+      catch { if (alive && !['#tools', '#tools-cga', '#tools-blocked'].includes(window.location.hash)) setLoginOpen(true); }
     }).catch(() => {});
     return () => { alive = false; };
   }, []);
@@ -303,12 +304,12 @@ export function App() {
   const filteredRuns = runs.filter(r => `${r.id} ${r.name} ${r.env}`.toLowerCase().includes(query.toLowerCase()));
   const toggleCase = id => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const heading = { home: ['工作台', '从明确的环境组合开始，完成一次可复现的验证。'], env: ['环境与制品', '每次运行绑定明确的版本组合。'],
-    daily: ['Daily',''], runs: ['用例与运行', '选择用例、查看执行现场，并保留每一次复测。'], reports: ['测试报告', '按文件、逻辑用例和参数配置查看每项结果与执行证据。'], profiling: ['Profiling', '绑定一个 case 与一个环境，观察执行时间线与性能指标。'], regression: ['回归定位', '从基线验证到版本边界、组件干预和可复现调研报告。'], models: ['个人模型配置', '管理自己的模型端点、配置版本和加密密钥。'], data: ['数据中心', '按空间、任务、case和daily制品查询历史数据。'], diagnosis: ['诊断与证据', '让判断有依据，让复现可以移交。'], settings: ['设置', '管理本地连接与界面偏好。'] }[page];
+    daily: ['Daily',''], runs: ['用例与运行', '选择用例、查看执行现场，并保留每一次复测。'], reports: ['测试报告', '按文件、逻辑用例和参数配置查看每项结果与执行证据。'], profiling: ['Profiling', '绑定一个 case 与一个环境，观察执行时间线与性能指标。'], regression: ['回归定位', '从基线验证到版本边界、组件干预和可复现调研报告。'], models: ['个人模型配置', '管理自己的模型端点、配置版本和加密密钥。'], data: ['数据中心', '按空间、任务、case和daily制品查询历史数据。'], diagnosis: ['诊断与证据', '让判断有依据，让复现可以移交。'], tools: ['Tools', '独立 helper 工具集合。'], 'tools-cga': ['CGA Layout', 'CTA tile 排列。'], 'tools-blocked': ['Blocked Layout', '线程数据分布。'], settings: ['设置', '管理本地连接与界面偏好。'] }[page];
 
   return <div className={`app ${panel ? 'has-drawer' : ''}`}>
     <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`} aria-label="主导航" inert={overlay && !!panel}>
       <a className="brand" href="#env" onClick={e => { e.preventDefault(); navigate('env'); }}><img src="/assets/brand-mark.png" alt="" /><span>triton-dev</span></a>
-      <nav>{NAV.map(([id, label, Icon]) => <button key={id} className={page === id ? 'nav-item active' : 'nav-item'} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={23} stroke={1.65} />{label}</button>)}
+      <nav>{NAV.map(([id, label, Icon]) => <Fragment key={id}><button className={page === id || (id === 'tools' && ['tools-cga','tools-blocked'].includes(page)) ? 'nav-item active' : 'nav-item'} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={23} stroke={1.65} />{label}</button>{id === 'tools' && ['tools','tools-cga', 'tools-blocked'].includes(page) && <div className="agent-submodules" role="group" aria-label="Tools 子工具"><button className={`agent-submodule ${page === 'tools-cga' ? 'active' : ''}`} aria-current={page === 'tools-cga' ? 'page' : undefined} onClick={() => navigate('tools-cga')}>CGA Layout</button><button className={`agent-submodule ${page === 'tools-blocked' ? 'active' : ''}`} aria-current={page === 'tools-blocked' ? 'page' : undefined} onClick={() => navigate('tools-blocked')}>Blocked Layout</button></div>}</Fragment>)}
         <button className={`nav-item agent-nav-toggle ${page === 'regression' ? 'agent-selected' : ''}`} aria-label="Agent 任务栏" aria-expanded={agentOpen} aria-controls="agent-submodules" onClick={() => setAgentOpen(!agentOpen)}><IconSparkles size={23} stroke={1.65}/><span>Agent</span>{agentOpen ? <IconChevronDown size={16}/> : <IconChevronRight size={16}/>}</button>
         {agentOpen && <div id="agent-submodules" className="agent-submodules" role="group" aria-label="Agent 子模块"><button className={`agent-submodule ${page === 'regression' ? 'active' : ''}`} aria-current={page === 'regression' ? 'page' : undefined} onClick={() => navigate('regression')}>回归定位</button><button className={`agent-submodule ${page === 'models' ? 'active' : ''}`} onClick={() => navigate('models')}>模型配置{!platformInfo && <small>需多人服务</small>}</button></div>}
       </nav>
@@ -316,12 +317,13 @@ export function App() {
     </aside>
     <header className="topbar" inert={overlay && !!panel}>
       <button className="icon-button mobile-toggle" aria-label="打开导航" onClick={() => setMobileNav(!mobileNav)}><IconMenu2 size={22} /></button>
-      <button className={'connection-pill'+(platformInfo?' platform-connection':'')} onClick={() => navigate('settings')}><IconCircleFilled size={11} className={connected ? 'success' : 'muted'} />{connected ? '服务已连接' : '离线演示'}</button>
-      <div className="topbar-right">{!connected && <span className="source-label">演示数据</span>}{platformInfo && <button className="platform-user-button" onClick={() => sessionUser ? navigate('settings') : setLoginOpen(true)}>{sessionUser ? sessionUser.name : '姓名登录'}</button>}</div>
+      <button className={'connection-pill'+(platformInfo?' platform-connection':'')} onClick={() => navigate('settings')}><IconCircleFilled size={11} className={connected ? 'success' : 'muted'} />{connected ? '服务已连接' : ['tools','tools-cga', 'tools-blocked'].includes(page) ? '本地工具' : '离线演示'}</button>
+      <div className="topbar-right">{!connected && !['tools','tools-cga', 'tools-blocked'].includes(page) && <span className="source-label">演示数据</span>}{platformInfo && <button className="platform-user-button" onClick={() => sessionUser ? navigate('settings') : setLoginOpen(true)}>{sessionUser ? sessionUser.name : '姓名登录'}</button>}</div>
     </header>
     <div className="workspace">
       <main className="main-content" id="main" inert={overlay && !!panel}>
-        {!['regression','daily','kernel'].includes(page) && !(page === 'runs' && activeRun) && <div className="page-heading"><h1>{heading[0]}</h1></div>}
+        {!['regression','daily','kernel','tools','tools-cga', 'tools-blocked'].includes(page) && !(page === 'runs' && activeRun) && <div className="page-heading"><h1>{heading[0]}</h1></div>}
+        {['tools','tools-cga', 'tools-blocked'].includes(page) && <Suspense fallback={<p className="muted">正在加载 Tools…</p>}><ToolsWorkspace page={page} onNavigate={navigate}/></Suspense>}
         {page === 'kernel' && <Suspense fallback={<p className="muted">正在加载 Kernel Lab…</p>}><KernelWorkspace key={sessionUser?.workspace_id || (connected ? 'bearer' : 'offline')} connected={connected} token={token} user={sessionUser}/></Suspense>}
         {mode === 'local' && ['env', 'home', 'diagnosis'].includes(page) && <Info warning>本页为演示数据，未操作实际制品。</Info>}
         {connectionError && mode === 'local' && <div className="error-banner" role="alert"><IconAlertCircle size={18} />{connectionError}<button onClick={() => navigate('settings')}>检查连接</button></div>}

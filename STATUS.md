@@ -153,3 +153,23 @@ UI验证：前端20项模型/会话测试、4项静态测试与生产构建通�
 ## Daily提交整理（2026-10-27）
 
 本次提交纳入Daily任务API/CLI、数据库迁移与日志索引、个人计划和调度、质量月历、筛选报告/复测/导出及圆角日历UI；上文“未提交”作为阶段记录保留。提交前完整171项Python测试（含PostgreSQL/SQLite）、ruff、前端22项模型测试+4项静态测试、前端/Python构建和仓库外安装wheel smoke通过。SDK获取/环境制作仍为mock，真实CPU pytest与历史模拟数据明确区分。
+
+## Tools / CGA Layout（2026-11-04，未提交）
+
+已同步检查origin/main，本地基线a7539b3与远程一致。新增Tools集合与独立CGA Layout页面，纯浏览器解析现代CGA基向量和CTAsPerCGA/CTASplitNum/CTAOrder，按编号位计算CTA tile、复制组和声明tile shape的元素范围。支持1–4维轴/切片、CTA选择/映射表、缩放、SVG/JSON及分享链接；不依赖编译或登录，不推断物理SM/warp/内存地址。说明见docs/CGA_LAYOUT.md。
+
+验证：前端37项模型/会话测试（含8项CGA映射与参数组合校验）、4项静态测试及生产构建通过。浏览器验证Tools导航、旧格式/复制、3D切片跟随、无效输入移除旧图、JSON/SVG实际下载、分享链接恢复；390px根宽379px无横向溢出，控制台error为空。预览已启动；本轮未提交/推送。
+
+2026-11-04 CGA页面收敛：仅布局输入和CTA排列展示，实时计算；移除辅助操作与数据卡，高维自动分组。此前截图/功能记录为初版；当前使用方式见docs/CGA_LAYOUT.md。
+
+## Blocked Layout helper（2026-11-04，未提交）
+
+Tools新增Blocked Layout页面，输入shape与布局即时展示CTA元素分布、线程/逻辑槽位、复制关系和连续区间；支持MLIR/Gluon/JSON与CGA现代/旧参数。纯本地计算，不执行kernel，不推断物理地址或launch grid。官方示例、大小shape、order、多CTA和输入预算有9项测试；范围见docs/BLOCKED_LAYOUT.md。
+
+2026-11-04 Blocked Layout增加矩阵缩放（25%–300%）、100%复位和适应宽度，仅调整右侧数据格与文字尺寸。
+
+2026-11-04 Blocked大图升级：Canvas可见区域绘制替换逐元素DOM，上限65536元素/262144归属；超过256自动总览、鼠标位置缩放、拖动平移、文字按尺寸显示、着色切换与固定线程/键盘导航。此前25%–300%限制由0.001%–400%替代。51项前端测试通过；未接入实际kernel，超65536尚不支持。
+
+## Tools提交整理（2026-11-04）
+
+本次提交纳入Tools导航、简约CGA查看器、Blocked Layout及Canvas大图缩放/平移/着色/固定线程、测试、说明和预览图。上文“未提交”为阶段记录。提交前177项Python测试、Ruff、51项前端测试、4项静态测试、前端/Python构建及仓库外安装wheel smoke通过。本轮Python测试使用默认SQLite覆盖，未重复PostgreSQL集成；真实SDK/板卡与超65536聚合范围不变。

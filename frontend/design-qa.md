@@ -185,3 +185,13 @@ final result: passed
 独立localhost验收：月历有全PASS绿色与包含XFAIL等非全PASS红色，点击10-03进入32配置质量报告，FAIL筛选只返回1条；点击该case日志定位到对应数据库配置日志，明确历史为模拟内容。一键失败项复测真实执行2个CPU配置，保留原SDK/环境和原报告，结果FAIL+XPASS，原日期仍红且显示复测徽标。日历按实际月份需要显示4–6周，避免多余空白周；固定顶栏下用scroll-margin保持报告标题与日志面板可见。截图见frontend/design/daily/。真实SDK/板卡未测。
 
 2026-10-27 Daily圆角日历：桌面独立16px圆角卡片、10px间距、PASS数量/耗时优先；移除格内重复状态和长说明。390px根宽375px，无横向溢出；手机收起次要标签，日期点击与报告返回正常。前端22+4项通过，生产构建通过。
+
+2026-11-04 Tools/CGA：独立Tools集合和子路由；浏览器验收8CTA/4tile/2副本、旧三参数广播位、3D切片与CTA点击、无效参数停用旧结果、JSON/SVG下载及链接恢复。390px根宽379px，长图仅内部滚动；error日志为空。预览见design/tools/cga-layout.png。37项模型测试+4项静态测试及构建通过。
+
+2026-11-04 CGA精简验收：内容区仅一个textarea、零button/select/input，两个展示区域；浏览器确认默认4tile、3D自动2组8tile、错误输入移除旧图。8项CGA测试与前端构建通过，预览见design/tools/cga-layout-simple.png。初版导出/分享等已从页面移除。
+
+2026-11-04 Blocked Layout：默认8×32、2CTA各128元素，点击/聚焦索引0高亮0–1，254格淡化；3×8输入报错且旧格数归零；2×4×2自动两组16格，1×1/32lane显示×32复制。1280px根宽1265、390px根宽375，长图仅内部滚动，console error为空。46项模型测试（含新增9项布局测试）、4项静态测试与生产构建通过；预览design/tools/blocked-layout.png。没有执行实际kernel或做目标设备编译一致性验证。
+
+2026-11-04 Blocked缩放：浏览器验证125%格子77.5×61.25、适应宽度29%矩阵611px/容器652px、25%与300%按钮边界禁用、百分比复位100%。50%下线程高亮仍为索引0–1，详情正确；构建通过，截图design/tools/blocked-layout-zoom.png。
+
+2026-11-04 Canvas大图验收：65536元素(256×256)默认总览3.23%，页面1个Canvas、0个旧元素格DOM、138个总DOM节点；Warp着色实际渲染。点击索引0固定后拖动仍保留0–1线程详情，Escape解除；画布方向键显示[0,1]映射，+键变为125%。512×256明确超限并移除Canvas，恢复后正常；console error为空。390px根宽375、画布299px，工具栏换行无横向溢出，临时视口已复位。51项模型/会话测试（新增大图覆盖、锚点缩放、命中/分组、视口裁剪和缩放边界）、4项静态测试、生产构建通过。截图design/tools/blocked-canvas-overview.png与blocked-canvas-mobile.png；未测试实际板卡或超65536聚合。

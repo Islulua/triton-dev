@@ -148,3 +148,9 @@ triton-dev doctor --json
 完整Daily流水线、严格全PASS日历、质量报告、数据库日志与API/CLI对照设计见 [DAILY_PIPELINE_DESIGN.md](docs/DAILY_PIPELINE_DESIGN.md)；当前为待实现方案。
 
 Daily可用首版见 [DAILY_USAGE.md](docs/DAILY_USAGE.md)：Mock SDK/环境、真实CPU测试、质量日历、数据库日志与CLI。
+
+新增 [Tools / CGA Layout](docs/CGA_LAYOUT.md)：在独立helper页面将Triton CGA layout转换为CTA tile排列，仅一个输入框与一个展示框，支持切分/复制与1–4维自动分组。入口 `/#tools`。
+
+### Layout helpers
+
+网页 Tools 提供 [CGA Layout](docs/CGA_LAYOUT.md) 与 [Blocked Layout](docs/BLOCKED_LAYOUT.md)。后者输入shape和布局，观察CTA/线程的元素分布与连续逻辑索引，无需板卡或登录。
