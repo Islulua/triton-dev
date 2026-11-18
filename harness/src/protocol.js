@@ -27,3 +27,14 @@ export function pageFor(path) {
   if (path.includes('/data/') || path.includes('case-results')) return 'data';
   return 'runs';
 }
+
+// Stable page identities are shared by manual navigation and AI result navigation.
+export const MODULES = [
+  ['home','工作台'], ['daily','Daily'], ['env','环境与制品'], ['runs','用例与运行'],
+  ['reports','测试报告'], ['profiling','Profiling'], ['regression','回归定位'],
+  ['diagnosis','诊断与证据'], ['kernel','Kernel Lab'], ['tools','Tools'],
+  ['tools-cga','CGA Layout'], ['tools-blocked','Blocked Layout'], ['data','数据中心'],
+  ['models','Triton 模型配置'], ['settings','工具连接设置'],
+].map(([page,title]) => ({page,title,kind:'triton-'+page,id:'triton-dev-harness/'+page,
+  showInGuide:!['models','settings'].includes(page)}));
+export function moduleFor(page) { return MODULES.find(module=>module.page===page); }

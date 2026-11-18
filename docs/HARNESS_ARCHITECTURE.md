@@ -14,7 +14,7 @@ DeepSeek Harness 是宿主，保留其原有对话、插件管理、模型设置
 2. `harness/src/client.jsx`：Client 标签与工具结果卡片。
 3. `triton_dev/harness`：Python CLI 能力发现与受控 JSON worker。
 
-Python 承担 SDK/测试/实验/证据。Harness 承担模型、上下文和 AI 编排。现有 React 工作台通过独立 iframe 保留浅色青绿 UI、Canvas、Monaco、报告及导航；这样 React 19 页面与 Harness React 18 插件不共用组件运行时。iframe 同源，不允许任意第三方 URL。默认入口仍是 Harness 对话；右侧工作台可按 Harness 自带布局展开。
+Python 承担 SDK/测试/实验/证据。Harness 承担模型、上下文和 AI 编排。现有 React 业务页面通过独立 iframe 保留浅色青绿 UI、Canvas、Monaco 和报告；Harness 提供统一导航和标签，嵌入页不渲染原全局侧栏、品牌头部及连接顶栏；这样 React 19 页面与 Harness React 18 插件不共用组件运行时。iframe 同源，不允许任意第三方 URL。默认入口仍是 Harness 对话；右侧工作台可按 Harness 自带布局展开。
 
 ## 2. AI 与页面使用同一能力
 
@@ -90,6 +90,12 @@ Host 配置 `enableWrites:false` 可关闭非只读 CLI 和所有非 GET API 工
 
 ## 集成界面实测
 
-官方 Harness 0.2.2-rc.1 原有面板入口与 Triton 标签共存，浏览器无脚本错误。截图中环境和首页继续明确标记演示来源。
+官方 Harness 0.2.2-rc.1 原有面板入口与 Triton 各模块的原生标签共存，浏览器无脚本错误。嵌入业务页面没有第二套全局导航；原独立应用外壳仅用于独立运行。截图展示独立 CGA Layout 标签；布局计算与真实 kernel 执行保持区分。
 
 ![Harness 与保留的 Triton 工作台](assets/harness-workbench.png)
+
+## 统一导航约定
+
+每个领域模块拥有稳定的 Harness tab kind（例如 `triton-profiling`、`triton-runs`、`triton-tools-cga`）与独立标题。手动入口、页面内跨模块操作与 AI 的 `triton_view` 使用同一模块表解析目标。旧 `triton` 标签保持只读兼容入口，不再贡献完整应用菜单。工具连接设置和 Triton 历史模型配置保留为需要时打开的业务页，不重复添加通用设置导航。
+
+`embedded=1` 与 Harness session 同时存在才启用内容模式。嵌入页的跨模块导航通过限定同源的 postMessage 交给宿主；宿主验证 origin、iframe source 和固定页面集合。独立浏览器运行继续使用原导航。不要在业务页加入新的全局导航或改变 Harness 自带插件入口。

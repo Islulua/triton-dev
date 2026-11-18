@@ -1,3 +1,4 @@
+import { isHarnessEmbedded, navigateInHarness } from './harness-navigation';
 import { apiBase, harnessHeaders } from './harness-navigation';
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
@@ -54,6 +55,7 @@ function Search({ value, onChange, placeholder }) {
 }
 
 export function App() {
+  const embedded = isHarnessEmbedded();
   const [platformInfo, setPlatformInfo] = useState(null), [sessionUser, setSessionUser] = useState(null), [loginOpen, setLoginOpen] = useState(false), [loginBusy, setLoginBusy] = useState(false), [loginError, setLoginError] = useState('');
   const [data, setData] = useState(() => loadState(window.localStorage));
   const [page, setPage] = useState(() => [...NAV.map(([id]) => id), 'regression', 'models', 'settings', 'tools-cga', 'tools-blocked'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'env');
@@ -63,7 +65,7 @@ export function App() {
   const [runTab, setRunTab] = useState('cases');
   const [runSurface, setRunSurface] = useState('pytest');
   const [query, setQuery] = useState('');
-  const [panel, setPanel] = useState(() => window.location.hash && window.location.hash !== '#env' ? null : 'create');
+  const [panel, setPanel] = useState(() => embedded || window.location.hash && window.location.hash !== '#env' ? null : 'create');
   const [source, setSource] = useState('baseline');
   const [draft, setDraft] = useState({ name: 'trial-1023', sdk: '1023', triton: '1023', torch: '1022' });
   const [error, setError] = useState('');
@@ -209,7 +211,7 @@ export function App() {
     clearUserData(); setSessionContext(null); setSessionUser(null); setToken(''); setConnected(false); setMode('demo'); setData(loadState(window.localStorage)); setLoginOpen(true);
   }
   function later(callback, ms) { timers.current.push(setTimeout(callback, ms)); }
-  function navigate(next) { if (['regression','models'].includes(next)) setAgentOpen(true); window.history.replaceState(null, '', `#${next}`); setPage(next); setPanel(null); setQuery(''); setRowMenu(null); setMobileNav(false); setError(''); if (next !== 'runs') setCurrentRun(null); }
+  function navigate(next) { if (navigateInHarness(next)) return; if (['regression','models'].includes(next)) setAgentOpen(true); window.history.replaceState(null, '', `#${next}`); setPage(next); setPanel(null); setQuery(''); setRowMenu(null); setMobileNav(false); setError(''); if (next !== 'runs') setCurrentRun(null); }
   function openPanel(next) { setPanel(next); setError(''); setRowMenu(null); }
   function cloneFrom(env) { setSource(env.name); setDraft({ name: envs.some(e => e.name === 'trial-1023') ? `trial-${envs.length + 1}` : 'trial-1023', sdk: env.sdk, triton: env.triton, torch: env.torch }); openPanel('create'); }
   async function copy(text) { try { await navigator.clipboard.writeText(text); setToast('已复制到剪贴板'); } catch { setToast('浏览器未允许复制，请手动选择文本。'); } }
@@ -307,20 +309,20 @@ export function App() {
   const heading = { home: ['工作台', '从明确的环境组合开始，完成一次可复现的验证。'], env: ['环境与制品', '每次运行绑定明确的版本组合。'],
     daily: ['Daily',''], runs: ['用例与运行', '选择用例、查看执行现场，并保留每一次复测。'], reports: ['测试报告', '按文件、逻辑用例和参数配置查看每项结果与执行证据。'], profiling: ['Profiling', '绑定一个 case 与一个环境，观察执行时间线与性能指标。'], regression: ['回归定位', '从基线验证到版本边界、组件干预和可复现调研报告。'], models: ['个人模型配置', '管理自己的模型端点、配置版本和加密密钥。'], data: ['数据中心', '按空间、任务、case和daily制品查询历史数据。'], diagnosis: ['诊断与证据', '让判断有依据，让复现可以移交。'], tools: ['Tools', '独立 helper 工具集合。'], 'tools-cga': ['CGA Layout', 'CTA tile 排列。'], 'tools-blocked': ['Blocked Layout', '线程数据分布。'], settings: ['设置', '管理本地连接与界面偏好。'] }[page];
 
-  return <div className={`app ${panel ? 'has-drawer' : ''}`}>
-    <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`} aria-label="主导航" inert={overlay && !!panel}>
+  return <div className={`app ${embedded ? 'harness-embedded' : ''} ${panel ? 'has-drawer' : ''}`}>
+    {!embedded && <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`} aria-label="主导航" inert={overlay && !!panel}>
       <a className="brand" href="#env" onClick={e => { e.preventDefault(); navigate('env'); }}><img src={`${import.meta.env.BASE_URL}assets/brand-mark.png`} alt="" /><span>triton-dev</span></a>
       <nav>{NAV.map(([id, label, Icon]) => <Fragment key={id}><button className={page === id || (id === 'tools' && ['tools-cga','tools-blocked'].includes(page)) ? 'nav-item active' : 'nav-item'} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={23} stroke={1.65} />{label}</button>{id === 'tools' && ['tools','tools-cga', 'tools-blocked'].includes(page) && <div className="agent-submodules" role="group" aria-label="Tools 子工具"><button className={`agent-submodule ${page === 'tools-cga' ? 'active' : ''}`} aria-current={page === 'tools-cga' ? 'page' : undefined} onClick={() => navigate('tools-cga')}>CGA Layout</button><button className={`agent-submodule ${page === 'tools-blocked' ? 'active' : ''}`} aria-current={page === 'tools-blocked' ? 'page' : undefined} onClick={() => navigate('tools-blocked')}>Blocked Layout</button></div>}</Fragment>)}
         <button className={`nav-item agent-nav-toggle ${page === 'regression' ? 'agent-selected' : ''}`} aria-label="Agent 任务栏" aria-expanded={agentOpen} aria-controls="agent-submodules" onClick={() => setAgentOpen(!agentOpen)}><IconSparkles size={23} stroke={1.65}/><span>Agent</span>{agentOpen ? <IconChevronDown size={16}/> : <IconChevronRight size={16}/>}</button>
         {agentOpen && <div id="agent-submodules" className="agent-submodules" role="group" aria-label="Agent 子模块"><button className={`agent-submodule ${page === 'regression' ? 'active' : ''}`} aria-current={page === 'regression' ? 'page' : undefined} onClick={() => navigate('regression')}>回归定位</button><button className={`agent-submodule ${page === 'models' ? 'active' : ''}`} onClick={() => navigate('models')}>模型配置{!platformInfo && <small>需多人服务</small>}</button></div>}
       </nav>
       <button className={`nav-item settings-nav ${page === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}><IconSettings size={24} stroke={1.65} />设置</button>
-    </aside>
-    <header className="topbar" inert={overlay && !!panel}>
+    </aside>}
+    {!embedded && <header className="topbar" inert={overlay && !!panel}>
       <button className="icon-button mobile-toggle" aria-label="打开导航" onClick={() => setMobileNav(!mobileNav)}><IconMenu2 size={22} /></button>
       <button className={'connection-pill'+(platformInfo?' platform-connection':'')} onClick={() => navigate('settings')}><IconCircleFilled size={11} className={connected ? 'success' : 'muted'} />{connected ? '服务已连接' : ['tools','tools-cga', 'tools-blocked'].includes(page) ? '本地工具' : '离线演示'}</button>
       <div className="topbar-right">{!connected && !['tools','tools-cga', 'tools-blocked'].includes(page) && <span className="source-label">演示数据</span>}{platformInfo && <button className="platform-user-button" onClick={() => sessionUser ? navigate('settings') : setLoginOpen(true)}>{sessionUser ? sessionUser.name : '姓名登录'}</button>}</div>
-    </header>
+    </header>}
     <div className="workspace">
       <main className="main-content" id="main" inert={overlay && !!panel}>
         {!['regression','daily','kernel','tools','tools-cga', 'tools-blocked'].includes(page) && !(page === 'runs' && activeRun) && <div className="page-heading"><h1>{heading[0]}</h1></div>}

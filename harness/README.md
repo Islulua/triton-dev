@@ -65,7 +65,7 @@ export DSH_HOME=/workspace/triton-harness/home
 
 使用上游原有 web profile 加载 `--patch /absolute/path/triton.patch.yml`；不要替换默认 profile 或删除已有插件。树外插件持久安装可使用该版本上游的 `dsh plugin` 管理命令。AI 模型和凭据仍通过 Harness 原有设置配置，triton 插件不覆盖。
 
-打开一个对话，右侧面板的新建入口选择 triton-dev。调用 `triton_open_page` 可切换所有原页面；工具结果卡片提供“在工作台查看”。无真实模型凭据时仍可使用工作台，不能声称完成了真实 AI 工作流。
+打开一个对话，右侧面板的新建入口直接选择 Profiling、用例与运行、CGA Layout 等模块。各模块使用 Harness 原生标签和标题，内容页不再包含第二套侧栏。调用 `triton_open_page` 可打开所有原页面；工具结果卡片提供“在工作台查看”。无真实模型凭据时仍可使用工作台，不能声称完成了真实 AI 工作流。
 
 ## 示例 AI 指令
 

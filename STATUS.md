@@ -179,3 +179,7 @@ Tools新增Blocked Layout页面，输入shape与布局即时展示CTA元素分�
 分支 triton-dev-harness。增加 CLI/HTTP 工具目录、JSON worker、原生 Host/Client 插件、独立工作台标签、结果导航与共享布局计算。保留原页面和独立 CLI；不修改 Harness 原有插件。设计与内网迁移见 docs/HARNESS_ARCHITECTURE.md，测试边界见 harness/README.md；真实模型、板卡与内网身份另行验收。
 
 本分支验证：181 项 Python、51 项前端、4 项静态打包、5 项插件/客户端测试通过，Ruff/前端及插件构建/Python sdist+wheel/仓库外 wheel smoke 通过。官方 Harness 0.2.2-rc.1 已实际加载插件，认证命名空间 API/原工作台 CGA 页面成功；工具层真实收集、单参数 CPU pytest 运行、mock Profiling 与报告定位闭环通过。未配置模型凭据，未验证真实 LLM 自动决策。源码全量安装受 cdn.sheetjs.com 403 限制，使用官方发行包完成运行检查。
+
+2026-11-18 导航统一：移除 Harness 嵌入页的 Triton 全局侧栏和重复顶栏，各模块注册独立原生页面入口；页面内跨模块跳转与 AI 结果共用目标映射。保留独立应用模式与原业务 UI。客户端测试覆盖模块默认入口和新/历史结果跳转。
+
+导航修订验收：181 项 Python、51 项前端、4 项静态打包、6 项插件/客户端测试、Ruff、前端/插件/Python 构建与仓库外 wheel smoke 通过。浏览器实测原生模块入口、Tools→CGA 跨模块新标签、嵌入页侧栏/顶栏数量为零、独立应用导航保留，脚本错误为零；更新 docs/assets/harness-workbench.png。

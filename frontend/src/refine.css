@@ -281,3 +281,7 @@ input[type=checkbox] { accent-color: var(--ui-accent); flex-shrink: 0; }
 .case-result-block.CANCELLED, .case-result-block.PENDING { background: var(--ui-neutral); }
 .case-result-block.RUNNING { background: var(--ui-info); }
 .regression-hero-facts.compact { grid-template-columns: 1fr; }
+
+/* Harness owns global navigation and its tab header; this surface contains business UI only. */
+.app.harness-embedded { --sidebar: 0px; --header: 0px; }
+.app.harness-embedded > .workspace { margin-left: 0; padding-top: 0; }
