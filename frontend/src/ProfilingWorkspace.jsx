@@ -1,3 +1,4 @@
+import { harnessSelection } from './harness-navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { IconActivity, IconDownload, IconPlayerPlay, IconInfoCircle } from '@tabler/icons-react';
 import { request, downloadJson } from './api';
@@ -137,6 +138,7 @@ export function ProfilingWorkspace({ token, onSettings }) {
     Promise.all([request('/profiling/catalog', { token, signal: controller.signal }), request('/profiling/reports', { token, signal: controller.signal })]).then(([c, h]) => { setCatalog(c); setHistory(h); }).catch(e => { if (!controller.signal.aborted) setError(e.message); });
     return () => controller.abort();
   }, [token]);
+  useEffect(() => { const id=harnessSelection().report_id; if(token && id) load(id); }, [token]);
   async function run() {
     setError(''); setBusy(true);
     const body = { case_id: caseId, environment_id: environment, adapter: 'mock', warmup: Number(warmup), repeats: Number(repeats), seed: Number(seed) };

@@ -1,3 +1,5 @@
+import { harnessSelection } from './harness-navigation';
+import { apiBase, harnessHeaders } from './harness-navigation';
 import { useEffect, useRef, useState } from 'react';
 import { request, downloadJson } from './api';
 import './pytest.css';
@@ -31,15 +33,15 @@ function WorkerLogs({reports=[]}) {
 }
 export function PytestWorkspace({token,jobs,records}) {
   const projects=jobs.filter(j=>j.kind==='pytest');
-  const [project,setProject]=useState(projects[0]?.job_id||'');
-  const [collectionId,setCollectionId]=useState('');
+  const [project,setProject]=useState(() => harnessSelection().job_id || projects[0]?.job_id || '');
+  const [collectionId,setCollectionId]=useState(() => harnessSelection().operation === 'collect' ? harnessSelection().task_id || '' : '');
   const [selected,setSelected]=useState([]);
   const [isolation,setIsolation]=useState('case');
   const [workers,setWorkers]=useState(1);
   const [extensions,setExtensions]=useState({});
   const [expanded,setExpanded]=useState(new Set());
-  const [surface,setSurface]=useState('collection');
-  const [runId,setRunId]=useState('');
+  const [surface,setSurface]=useState(() => harnessSelection().task_id && harnessSelection().operation !== 'collect' ? 'result' : 'collection');
+  const [runId,setRunId]=useState(() => harnessSelection().task_id || '');
   const [caseId,setCaseId]=useState('');
   const [query,setQuery]=useState('');
   const [failedOnly,setFailedOnly]=useState(false);
@@ -84,7 +86,7 @@ export function PytestWorkspace({token,jobs,records}) {
   const rerun=mode=>post(`/tasks/${run.id}/rerun`,{mode},open);
   async function cancel(){try{await request(`/tasks/${run.id}/cancel`,{token,method:'POST',body:{}});}catch(e){setError(e.message);}}
   async function downloadArtifact(item){
-    try{const response=await fetch(`/api/tasks/${run.id}/artifacts/${item.id}`,{headers:{Authorization:`Bearer ${token}`}});
+    try{const response=await fetch(`${apiBase()}/tasks/${run.id}/artifacts/${item.id}`,{headers:{...harnessHeaders(),Authorization:`Bearer ${token}`}});
       if(!response.ok)throw new Error('附件下载失败或超过 10 MiB 限制');
       const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');
       link.href=url;link.download=item.path.split('/').at(-1);link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

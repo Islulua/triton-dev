@@ -154,3 +154,7 @@ Daily可用首版见 [DAILY_USAGE.md](docs/DAILY_USAGE.md)：Mock SDK/环境、�
 ### Layout helpers
 
 网页 Tools 提供 [CGA Layout](docs/CGA_LAYOUT.md) 与 [Blocked Layout](docs/BLOCKED_LAYOUT.md)。后者输入shape和布局，观察CTA/线程的元素分布与连续逻辑索引，无需板卡或登录。
+
+## DeepSeek Harness 集成
+
+新分支将工具与原工作台以插件接入 Harness。安装见 [插件说明](harness/README.md)，核心边界、功能矩阵及内网迁移见 [架构设计](docs/HARNESS_ARCHITECTURE.md)。

@@ -1,3 +1,5 @@
+import { harnessSelection } from './harness-navigation';
+import { apiBase, harnessHeaders } from './harness-navigation';
 import { useEffect, useState } from 'react';
 import { IconPlayerPlay, IconDownload, IconRefresh, IconPlayerStop, IconPlus, IconCheck, IconChevronDown, IconChevronRight, IconCircleCheckFilled, IconCircle, IconAlertCircle, IconLoader2, IconCopy, IconFileText } from '@tabler/icons-react';
 import { request, downloadJson } from './api';
@@ -14,7 +16,7 @@ function downloadText(name, text, type = 'text/plain') {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function RegressionWorkspace({ token, onSettings, multiUser = false }) {
-  const [catalog, setCatalog] = useState(null), [records, setRecords] = useState([]), [selected, setSelected] = useState('');
+  const [catalog, setCatalog] = useState(null), [records, setRecords] = useState([]), [selected, setSelected] = useState(() => harnessSelection().task_id || '');
   const [scenario, setScenario] = useState('component'), [baseline, setBaseline] = useState('mock-sdk-20261010');
   const [mode, setMode] = useState('earliest_verified'), [repeat, setRepeat] = useState(2), [budget, setBudget] = useState(60);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [evidence, setEvidence] = useState(null), [report, setReport] = useState(null), [tab, setTab] = useState('experiments');
@@ -70,7 +72,7 @@ export function RegressionWorkspace({ token, onSettings, multiUser = false }) {
     if (offline) { downloadJson('regression-browser-demo.json', record); return; }
     setError('');
     try {
-      const response = await fetch(`/api/regression/tasks/${record.id}/bundle`, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch(`${apiBase()}/regression/tasks/${record.id}/bundle`, { headers: { ...harnessHeaders(), Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('证据包尚未就绪或服务连接失败。');
       const url = URL.createObjectURL(await response.blob());
       const a = document.createElement('a'); a.href = url; a.download = `${record.id}-evidence.tar.gz`; a.click();

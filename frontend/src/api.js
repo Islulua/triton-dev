@@ -1,8 +1,9 @@
+import { apiBase, harnessHeaders } from './harness-navigation.js';
 export async function request(path, { token, method = 'GET', body, signal } = {}) {
   const sessionAtStart = sessionContext;
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${apiBase()}${path}`, {
     method, signal, credentials: 'same-origin',
-    headers: { ...(token && token !== 'session' ? { Authorization: `Bearer ${token}` } : {}),
+    headers: { ...harnessHeaders(), ...(token && token !== 'session' ? { Authorization: `Bearer ${token}` } : {}),
       ...(sessionContext && method !== 'GET' ? { 'X-CSRF-Token': sessionContext.csrf_token } : {}),
       ...(body ? { 'Content-Type': 'application/json' } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),

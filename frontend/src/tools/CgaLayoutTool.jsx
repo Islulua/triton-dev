@@ -1,3 +1,4 @@
+import { harnessSelection } from '../harness-navigation';
 import { useMemo, useState } from 'react';
 import { buildCgaLayout } from './cga-layout';
 import '../tools.css';
@@ -5,7 +6,7 @@ import '../tools.css';
 const COLORS = ['#e1f0ed', '#e7ecfa', '#f7ecd9', '#eee6f6', '#e0edf4', '#f7e6eb', '#edf1df', '#e9edf0'];
 const vector = xs => `[${xs.join(', ')}]`;
 export function CgaLayoutTool() {
-  const [source, setSource] = useState('[[0, 1], [1, 0]]');
+  const [source, setSource] = useState(() => harnessSelection().source || '[[0, 1], [1, 0]]');
   const computed = useMemo(() => {
     if (!source.trim()) return {};
     try {

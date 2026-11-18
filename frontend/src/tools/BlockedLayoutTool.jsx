@@ -1,3 +1,4 @@
+import { harnessSelection } from '../harness-navigation';
 import { useMemo, useState } from 'react';
 import { buildBlockedLayout, contiguousRuns } from './blocked-layout';
 import { BlockedLayoutCanvas } from './BlockedLayoutCanvas';
@@ -13,8 +14,8 @@ const DEFAULT = `#ttg.blocked<{
 const runsText = xs => contiguousRuns(xs).map(([a,b]) => a === b ? `${a}` : `${a}–${b}`).join(', ');
 const ownerText = o => `CTA ${o.block} · W${o.warp} · L${o.lane} · T${o.thread} · R${o.register}`;
 export function BlockedLayoutTool() {
-  const [shape,setShape] = useState('8, 32');
-  const [source,setSource] = useState(DEFAULT);
+  const [shape,setShape] = useState(() => harnessSelection().shape || '8, 32');
+  const [source,setSource] = useState(() => harnessSelection().source || DEFAULT);
   const [selection,setSelection] = useState(null);
   const computed = useMemo(() => {
     try {

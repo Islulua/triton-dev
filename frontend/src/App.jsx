@@ -1,3 +1,4 @@
+import { apiBase, harnessHeaders } from './harness-navigation';
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   IconHome, IconPackages, IconPlayerPlay, IconFileAnalytics, IconSettings,
@@ -164,7 +165,7 @@ export function App() {
     let stopped = false; let cursor = 0; const controller = new AbortController();
     async function pollEvents() {
       try {
-        const response = await fetch(`/api/tasks/${encodeURIComponent(currentRun)}/events?after=${cursor}`, { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal });
+        const response = await fetch(`${apiBase()}/tasks/${encodeURIComponent(currentRun)}/events?after=${cursor}`, { headers: { ...harnessHeaders(), Authorization: `Bearer ${token}` }, signal: controller.signal });
         if (!response.ok) throw new Error(`事件读取失败（${response.status}）`);
         const text = await response.text();
         const parsed = text.split('\n').filter(line => line.startsWith('data: ')).map(line => JSON.parse(line.slice(6)));
@@ -308,7 +309,7 @@ export function App() {
 
   return <div className={`app ${panel ? 'has-drawer' : ''}`}>
     <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`} aria-label="主导航" inert={overlay && !!panel}>
-      <a className="brand" href="#env" onClick={e => { e.preventDefault(); navigate('env'); }}><img src="/assets/brand-mark.png" alt="" /><span>triton-dev</span></a>
+      <a className="brand" href="#env" onClick={e => { e.preventDefault(); navigate('env'); }}><img src={`${import.meta.env.BASE_URL}assets/brand-mark.png`} alt="" /><span>triton-dev</span></a>
       <nav>{NAV.map(([id, label, Icon]) => <Fragment key={id}><button className={page === id || (id === 'tools' && ['tools-cga','tools-blocked'].includes(page)) ? 'nav-item active' : 'nav-item'} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={23} stroke={1.65} />{label}</button>{id === 'tools' && ['tools','tools-cga', 'tools-blocked'].includes(page) && <div className="agent-submodules" role="group" aria-label="Tools 子工具"><button className={`agent-submodule ${page === 'tools-cga' ? 'active' : ''}`} aria-current={page === 'tools-cga' ? 'page' : undefined} onClick={() => navigate('tools-cga')}>CGA Layout</button><button className={`agent-submodule ${page === 'tools-blocked' ? 'active' : ''}`} aria-current={page === 'tools-blocked' ? 'page' : undefined} onClick={() => navigate('tools-blocked')}>Blocked Layout</button></div>}</Fragment>)}
         <button className={`nav-item agent-nav-toggle ${page === 'regression' ? 'agent-selected' : ''}`} aria-label="Agent 任务栏" aria-expanded={agentOpen} aria-controls="agent-submodules" onClick={() => setAgentOpen(!agentOpen)}><IconSparkles size={23} stroke={1.65}/><span>Agent</span>{agentOpen ? <IconChevronDown size={16}/> : <IconChevronRight size={16}/>}</button>
         {agentOpen && <div id="agent-submodules" className="agent-submodules" role="group" aria-label="Agent 子模块"><button className={`agent-submodule ${page === 'regression' ? 'active' : ''}`} aria-current={page === 'regression' ? 'page' : undefined} onClick={() => navigate('regression')}>回归定位</button><button className={`agent-submodule ${page === 'models' ? 'active' : ''}`} onClick={() => navigate('models')}>模型配置{!platformInfo && <small>需多人服务</small>}</button></div>}

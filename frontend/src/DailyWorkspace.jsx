@@ -1,3 +1,5 @@
+import { harnessSelection } from './harness-navigation';
+import { apiBase, harnessHeaders } from './harness-navigation';
 import { useEffect, useRef, useState } from 'react';
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconPlayerPlay, IconRefresh, IconDownload, IconX } from '@tabler/icons-react';
 import { request, currentSession } from './api';
@@ -12,7 +14,7 @@ const emptyFilters={statuses:[],operator:'',dtype:'',worker:'',phase:'',file:'',
 function Result({value}){return <span className={`case-result-block ${value}`}>{value}</span>}
 export function DailyWorkspace({token,onSettings}) {
   const [plans,setPlans]=useState([]),[plan,setPlan]=useState(''),[month,setMonth]=useState(today().slice(0,7)),[calendar,setCalendar]=useState(null);
-  const [batch,setBatch]=useState(()=>new URLSearchParams(window.location.search).get('daily_batch')||''),[report,setReport]=useState(null),[cases,setCases]=useState([]),[next,setNext]=useState(null);
+  const [batch,setBatch]=useState(()=>harnessSelection().batch_id || new URLSearchParams(window.location.search).get('daily_batch')||''),[report,setReport]=useState(null),[cases,setCases]=useState([]),[next,setNext]=useState(null);
   const [filters,setFilters]=useState(emptyFilters),[query,setQuery]=useState(''),[selected,setSelected]=useState([]);
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[showPlan,setShowPlan]=useState(false),[showRun,setShowRun]=useState(false);
   const [planName,setPlanName]=useState(''),[schedule,setSchedule]=useState('08:00'),[workers,setWorkers]=useState(4),[enabled,setEnabled]=useState(false);
@@ -54,7 +56,7 @@ export function DailyWorkspace({token,onSettings}) {
   async function rerun(scope){await mutate(async()=>{const r=await request(`${root}/batches/${batch}/reruns`,{token,method:'POST',body:{scope,idempotency_key:crypto.randomUUID(),...(scope==='selected'?{selected:cases.filter(c=>selected.includes(c.configuration_id)).map(c=>c.nodeid)}:{})}});open(r.id)})}
   async function download(){await mutate(async()=>{
     const params=new URLSearchParams({format:exportFormat,...(exportScope==='filtered'?{...(filters.statuses.length?{status:filters.statuses.join(',')}:{}),...Object.fromEntries(Object.entries(filters).filter(([k,v])=>k!=='statuses'&&v!==''))}:{})});
-    const session=currentSession();const response=await fetch(`/api${root}/batches/${batch}/export?${params}`,{credentials:'same-origin',headers:token!=='session'?{Authorization:`Bearer ${token}`}:{}});if(!response.ok)throw new Error('报告下载失败');const blob=await response.blob();if(session!==currentSession())return;const url=URL.createObjectURL(blob);downloadUrls.current.push(url);const link=document.createElement('a');link.href=url;link.download=`${batch}.${exportFormat}`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const session=currentSession();const response=await fetch(`${apiBase()}${root}/batches/${batch}/export?${params}`,{credentials:'same-origin',headers:{...harnessHeaders(),...(token!=='session'?{Authorization:`Bearer ${token}`}:{})}});if(!response.ok)throw new Error('报告下载失败');const blob=await response.blob();if(session!==currentSession())return;const url=URL.createObjectURL(blob);downloadUrls.current.push(url);const link=document.createElement('a');link.href=url;link.download=`${batch}.${exportFormat}`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   })}
   if(!token)return <div className="ui-empty"><h3>登录后查看 Daily</h3><p>按日期查看 SDK、测试质量与数据库日志。</p><button className="button primary" onClick={onSettings}>姓名登录</button></div>;
   const counts=report?.summary?.counts||{};const failCount=['FAIL','CRASH','TIMEOUT','XPASS','INCOMPLETE'].reduce((n,k)=>n+(counts[k]||0),0);

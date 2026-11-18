@@ -1,3 +1,4 @@
+import { harnessSelection } from './harness-navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { IconDownload, IconFileCode, IconFileReport } from '@tabler/icons-react';
 import { downloadJson } from './api';
@@ -43,7 +44,7 @@ function ReportConfiguration({ row, expanded, onToggle, onInspect }) {
 }
 export function ReportsWorkspace({ records, demo = false, onSettings, onRun }) {
   const runs = records.filter(r => demo || r.request?.kind === 'pytest' && r.request?.operation === 'run').sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
-  const [project, setProject] = useState('all'), [selected, setSelected] = useState('');
+  const [project, setProject] = useState('all'), [selected, setSelected] = useState(() => harnessSelection().task_id || '');
   const projects = [...new Set(runs.map(r => r.job_id || 'browser-demo'))];
   const options = runs.filter(r => project === 'all' || (r.job_id || 'browser-demo') === project);
   const record = options.find(r => r.id === selected) || options[0];

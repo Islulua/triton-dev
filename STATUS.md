@@ -173,3 +173,9 @@ Tools新增Blocked Layout页面，输入shape与布局即时展示CTA元素分�
 ## Tools提交整理（2026-11-04）
 
 本次提交纳入Tools导航、简约CGA查看器、Blocked Layout及Canvas大图缩放/平移/着色/固定线程、测试、说明和预览图。上文“未提交”为阶段记录。提交前177项Python测试、Ruff、51项前端测试、4项静态测试、前端/Python构建及仓库外安装wheel smoke通过。本轮Python测试使用默认SQLite覆盖，未重复PostgreSQL集成；真实SDK/板卡与超65536聚合范围不变。
+
+## Harness 插件集成（2026-11-18）
+
+分支 triton-dev-harness。增加 CLI/HTTP 工具目录、JSON worker、原生 Host/Client 插件、独立工作台标签、结果导航与共享布局计算。保留原页面和独立 CLI；不修改 Harness 原有插件。设计与内网迁移见 docs/HARNESS_ARCHITECTURE.md，测试边界见 harness/README.md；真实模型、板卡与内网身份另行验收。
+
+本分支验证：181 项 Python、51 项前端、4 项静态打包、5 项插件/客户端测试通过，Ruff/前端及插件构建/Python sdist+wheel/仓库外 wheel smoke 通过。官方 Harness 0.2.2-rc.1 已实际加载插件，认证命名空间 API/原工作台 CGA 页面成功；工具层真实收集、单参数 CPU pytest 运行、mock Profiling 与报告定位闭环通过。未配置模型凭据，未验证真实 LLM 自动决策。源码全量安装受 cdn.sheetjs.com 403 限制，使用官方发行包完成运行检查。

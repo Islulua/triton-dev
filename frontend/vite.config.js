@@ -8,6 +8,7 @@ if (!['127.0.0.1', 'localhost'].includes(backend.hostname) || backend.protocol !
   throw new Error('The developer API proxy accepts local HTTP targets only');
 }
 export default defineConfig({
+  base: process.env.TRITON_DEV_UI_BASE || "/",
   build: { outDir: 'dist/client' },
   optimizeDeps: { include: ['react', 'react-dom/client'] },
   server: {
