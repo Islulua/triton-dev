@@ -183,3 +183,5 @@ Tools新增Blocked Layout页面，输入shape与布局即时展示CTA元素分�
 2026-11-18 导航统一：移除 Harness 嵌入页的 Triton 全局侧栏和重复顶栏，各模块注册独立原生页面入口；页面内跨模块跳转与 AI 结果共用目标映射。保留独立应用模式与原业务 UI。客户端测试覆盖模块默认入口和新/历史结果跳转。
 
 导航修订验收：181 项 Python、51 项前端、4 项静态打包、6 项插件/客户端测试、Ruff、前端/插件/Python 构建与仓库外 wheel smoke 通过。浏览器实测原生模块入口、Tools→CGA 跨模块新标签、嵌入页侧栏/顶栏数量为零、独立应用导航保留，脚本错误为零；更新 docs/assets/harness-workbench.png。
+
+2026-11-18 本地迁移：停止云端演示服务，安装/启动/worker 默认路径改为本机数据目录，支持路径空格与 python3；增加 docs/LOCAL_DEVELOPMENT.md。本机验收待在目标电脑执行。

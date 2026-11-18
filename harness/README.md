@@ -4,7 +4,7 @@
 
 ## 安装与启动
 
-可运行 `bash harness/scripts/setup.sh` 完成下列安装，随后 `(cd harness && npm start)` 启动。安装与数据保存在仓库外 `/workspace/triton-harness`，可用 `TRITON_HARNESS_ROOT` 覆盖。
+可运行 `bash harness/scripts/setup.sh` 完成下列安装，随后 `(cd harness && npm start)` 启动。默认安装与数据保存在本机 `~/.local/share/triton-dev-harness`（遵循 `XDG_DATA_HOME`），可用 `TRITON_HARNESS_ROOT` 覆盖。安装和启动脚本按 checkout 自动定位项目，不依赖 `/workspace`。本地迁移见 [LOCAL_DEVELOPMENT.md](../docs/LOCAL_DEVELOPMENT.md)。
 
 要求 Node >=24.9、Python >=3.10、bash/zsh。已验证官方 npm `@deepseek-ai/dsh@0.2.2-rc.1` 的插件加载、页面与代理；源码接口审阅基线为 `ca33fd6843b205e279c7ccb6cb73a472c78f5760`；上游 0.2.2-rc.4 为开发预览，npm 拆分包不能按同版本推测。
 

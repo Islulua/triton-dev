@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repository="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-runtime_root="${TRITON_HARNESS_ROOT:-/workspace/triton-harness}"
 cd "$repository"
-python -m venv .venv
+runtime_root="$(node --input-type=module -e "import {runtimeRoot} from './harness/src/paths.js'; console.log(runtimeRoot())")"
+python_bin="${TRITON_PYTHON:-python3}"
+"$python_bin" -m venv .venv
 .venv/bin/python -m pip install -e '.[test]'
 (cd frontend && npm ci --cache "$runtime_root/npm-cache" && TRITON_DEV_UI_BASE=/triton/ npm run build)
 (cd harness && npm ci --cache "$runtime_root/npm-cache" && npm run build)

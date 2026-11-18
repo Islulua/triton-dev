@@ -2,8 +2,10 @@
 import {spawn} from 'node:child_process';
 import {mkdir,writeFile,access} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
-const repository=resolve(new URL('../../',import.meta.url).pathname);
-const root=process.env.TRITON_HARNESS_ROOT||'/workspace/triton-harness';
+import {fileURLToPath} from 'node:url';
+import {runtimeRoot} from '../src/paths.js';
+const repository=resolve(fileURLToPath(new URL('../../',import.meta.url)));
+const root=runtimeRoot();
 const python=join(repository,'.venv/bin/python');
 const dsh=process.env.TRITON_DSH_BIN||join(root,'runtime/node_modules/.bin/dsh');
 const port=Number(process.env.TRITON_BACKEND_PORT||8766);
@@ -30,4 +32,4 @@ for(let n=0;n<100&&!stopping;n++){
 if(!ready){stop();throw new Error('Backend did not become ready');}
 const patch=join(root,'triton.patch.yml');
 await writeFile(patch,JSON.stringify([{insert:[{id:'triton-dev-workbench',name:'triton-dev-harness',config:{repository,python,backend:`http://127.0.0.1:${port}`,sdkRoot:join(root,'sdks'),cacheRoot:join(root,'cache'),uiRoot:join(repository,'frontend/dist/client')}}]},{id:'workspace-controller',config:{documentsDirectory:join(root,'documents')}}],null,2));
-launch(dsh,['web','--patch',patch,'--no-open','--port',process.env.TRITON_HARNESS_PORT||'3080'],{DSH_HOME:process.env.DSH_HOME||join(root,'home')});
+launch(dsh,['web','--patch',patch,...(process.env.TRITON_NO_OPEN==='1'?['--no-open']:[]),'--port',process.env.TRITON_HARNESS_PORT||'3080'],{DSH_HOME:process.env.DSH_HOME||join(root,'home')});

@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {apply} from '../src/index.js';
-const repository=new URL('../../',import.meta.url).pathname;
+import {fileURLToPath} from 'node:url';
+const repository=fileURLToPath(new URL('../../',import.meta.url));
 const tools=new Map();
 await apply({tools:{register:t=>tools.set(t.name,t)},webServer:{register:()=>()=>{}},effect:fn=>fn()},
  {repository,python:repository+'.venv/bin/python',backend:process.env.TRITON_TEST_BACKEND||'http://127.0.0.1:8766'});

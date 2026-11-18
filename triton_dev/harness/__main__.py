@@ -1,6 +1,7 @@
 """JSON stdin/stdout worker. Never accepts an executable or shell command."""
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -11,8 +12,11 @@ from .catalog import catalog, execute_cli
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--catalog", action="store_true")
-    parser.add_argument("--sdk-root", type=Path, default=Path("/workspace/triton-harness/sdks"))
-    parser.add_argument("--cache-root", type=Path, default=Path("/workspace/triton-harness/cache"))
+    data_root = Path(os.environ.get("TRITON_HARNESS_ROOT") or
+                     str(Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") /
+                         "triton-dev-harness")).expanduser().resolve()
+    parser.add_argument("--sdk-root", type=Path, default=data_root / "sdks")
+    parser.add_argument("--cache-root", type=Path, default=data_root / "cache")
     args = parser.parse_args()
     try:
         if args.catalog:

@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {runtimeRoot} from './paths.js';
 import { worker, Backend } from './backend.js';
 import { PAGES, navigation, routeName, pageFor } from './protocol.js';
 
@@ -12,7 +13,7 @@ const output={schema:{type:'object',additionalProperties:true},render:(_args,val
 
 export async function apply(ctx, options={}) {
   const config={repository,python:resolve(repository,'.venv/bin/python'),backend:'http://127.0.0.1:8765',
-    sdkRoot:'/workspace/triton-harness/sdks',cacheRoot:'/workspace/triton-harness/cache',
+    sdkRoot:resolve(runtimeRoot(),'sdks'),cacheRoot:resolve(runtimeRoot(),'cache'),
     uiRoot:resolve(repository,'frontend/dist/client'),enableWrites:true,...options};
   const backend=new Backend(config);
   const catalog=await worker(config);
